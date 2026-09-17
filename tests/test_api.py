@@ -1,5 +1,5 @@
 """
-The documented Python surface: `openquant.api`.
+The documented Python surface: `milq.api`.
 
 Everything here runs on data made in the test — an mzML written by the
 writer, a chromatographic run and a direct infusion — because the point of
@@ -27,8 +27,8 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import api, chemistry, manual, mzml  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq import api, chemistry, manual, mzml  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 #: the compound the synthetic infusion is of: a bile-acid standard whose
 #: name the standards table knows, with four labels its name declares and
@@ -93,7 +93,7 @@ class _Sample:
 def _write_infusion(path, scans: int = 150):
     """
     A direct infusion: every scan the same spectrum, for long enough that
-    flatness is evidence — see `openquant/infusion.py`.
+    flatness is evidence — see `milq/infusion.py`.
     """
     times = np.arange(scans) * 0.005
     one = _spectrum([(PRECURSOR, 1000.0), (PRECURSOR - 18.0106, 300.0),
@@ -179,8 +179,8 @@ def test_importing_it_starts_neither_qt_nor_a_session():
     In a subprocess, because the suite has already imported both by the time
     anything here runs.
     """
-    code = ("import sys; from openquant import api; "
-            "print('PyQt6' in sys.modules, 'openquant.session' in sys.modules)")
+    code = ("import sys; from milq import api; "
+            "print('PyQt6' in sys.modules, 'milq.session' in sys.modules)")
     out = subprocess.run([sys.executable, "-c", code], capture_output=True,
                          text=True, check=True,
                          cwd=os.path.dirname(os.path.dirname(__file__)))
@@ -561,7 +561,7 @@ def test_the_page_holds_the_three_scripts_it_claims():
     scripts = _scripts()
     assert len(scripts) == 3
     for script in scripts:
-        assert "from openquant import api" in script
+        assert "from milq import api" in script
         assert len(script.splitlines()) <= 16, "a ten-line script, roughly"
 
 

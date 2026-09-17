@@ -9,11 +9,12 @@ instead.
 
 import os
 import re
+import pytest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WXS = ROOT / "packaging" / "openquant.wxs"
+WXS = ROOT / "packaging" / "milq.wxs"
 
 
 def test_the_windows_installer_source_is_valid_xml():
@@ -30,11 +31,11 @@ def test_the_windows_installer_pins_its_toolset():
 
 
 def test_the_spec_and_the_package_agree_on_the_version():
-    import openquant
+    import milq
 
-    spec = (ROOT / "packaging" / "openquant.spec").read_text()
+    spec = (ROOT / "packaging" / "milq.spec").read_text()
     assert "__version__" in spec, "the spec should read the version, not repeat it"
-    assert openquant.__version__ not in spec, "the spec has a version written into it"
+    assert milq.__version__ not in spec, "the spec has a version written into it"
 
 
 def test_the_wine_shim_stays_out_of_the_installer():
@@ -49,7 +50,7 @@ def test_the_wine_shim_stays_out_of_the_installer():
     stub = ROOT / "packaging" / "wine" / "icuuc_stub.c"
     assert stub.exists(), "the shim's source is gone but its guard is still here"
 
-    spec = (ROOT / "packaging" / "openquant.spec").read_text()
+    spec = (ROOT / "packaging" / "milq.spec").read_text()
     wxs = WXS.read_text()
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
     for name, text in (("spec", spec), ("wxs", wxs), ("workflow", workflow)):
@@ -65,14 +66,14 @@ def test_the_wine_shim_stays_out_of_the_installer():
 # -- the icon reaches every platform ---------------------------------------- #
 ICONS = ROOT / "packaging" / "icons"
 LINUX = ROOT / "packaging" / "linux"
-SPEC = (ROOT / "packaging" / "openquant.spec").read_text()
+SPEC = (ROOT / "packaging" / "milq.spec").read_text()
 
 
 def test_the_bundle_icon_exists_in_every_form_the_builds_need():
-    assert (ICONS / "OpenQuant.icns").is_file()          # macOS bundle
-    assert (ICONS / "OpenQuant.ico").is_file()           # Windows executable
-    assert (ICONS / "OpenQuant.iconset" / "icon_256x256.png").is_file()  # Linux launcher
-    assert (ROOT / "openquant" / "icon.png").is_file()   # the window, everywhere
+    assert (ICONS / "MIL-Q.icns").is_file()          # macOS bundle
+    assert (ICONS / "MIL-Q.ico").is_file()           # Windows executable
+    assert (ICONS / "MIL-Q.iconset" / "icon_256x256.png").is_file()  # Linux launcher
+    assert (ROOT / "milq" / "icon.png").is_file()   # the window, everywhere
     assert "icon=ICON" in SPEC
 
 
@@ -80,38 +81,49 @@ def test_the_windows_installer_names_the_icon_for_the_shortcut_and_the_programs_
     root = ET.parse(WXS).getroot()
     ns = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
     icon = root.find(".//w:Icon", ns)
-    assert icon is not None and icon.get("Id") == "OpenQuantIcon"
+    assert icon is not None and icon.get("Id") == "MIL-QIcon"
     assert icon.get("SourceFile") == "$(IconFile)"
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
-    assert 'IconFile="$PWD\\packaging\\icons\\OpenQuant.ico"' in workflow
-    assert (ICONS / "OpenQuant.ico").is_file()
+    assert 'IconFile="$PWD\\packaging\\icons\\MIL-Q.ico"' in workflow
+    assert (ICONS / "MIL-Q.ico").is_file()
     arp = root.find(".//w:Property[@Id='ARPPRODUCTICON']", ns)
-    assert arp is not None and arp.get("Value") == "OpenQuantIcon"
+    assert arp is not None and arp.get("Value") == "MIL-QIcon"
     shortcut = root.find(".//w:Shortcut", ns)
-    assert shortcut.get("Icon") == "OpenQuantIcon"
+    assert shortcut.get("Icon") == "MIL-QIcon"
 
 
 def test_the_linux_launcher_entry_is_complete_and_travels_with_the_tarball():
-    desktop = (LINUX / "openquant.desktop").read_text()
+    desktop = (LINUX / "milq.desktop").read_text()
     keys = dict(line.split("=", 1) for line in desktop.splitlines() if "=" in line)
-    assert keys["Type"] == "Application" and keys["Name"] == "OpenQuant"
-    assert keys["Exec"].startswith("INSTALLDIR/OpenQuant") and keys["Icon"] == "openquant"
+    assert keys["Type"] == "Application" and keys["Name"] == "MIL-Q"
+    assert keys["Exec"].startswith("INSTALLDIR/MIL-Q") and keys["Icon"] == "milq"
     install = LINUX / "install.sh"
     if os.name != "nt":   # Windows has no execute bit; git carries the mode
         assert install.stat().st_mode & 0o111, "install.sh is not executable"
     script = install.read_text()
-    assert "INSTALLDIR" in script and "openquant.png" in script and "--remove" in script
+    assert "INSTALLDIR" in script and "milq.png" in script and "--remove" in script
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
-    assert "packaging/linux/openquant.desktop" in workflow
-    assert "icon_256x256.png dist/OpenQuant/openquant.png" in workflow
+    assert "packaging/linux/milq.desktop" in workflow
+    assert "icon_256x256.png dist/MIL-Q/milq.png" in workflow
 
 
 # -- the layered icon for macOS 26 ----------------------------------------- #
-ICON_DOCUMENT = ICONS / "OpenQuant.icon"
+ICON_DOCUMENT = ICONS / "MIL-Q.icon"
 
 
 def test_the_icon_composer_document_is_complete():
+    """
+    Skipped while there is no document: 1.0.0 ships without one.
+
+    The rename took the layered icon with it — OpenQuant's drew two
+    co-eluting peaks and MIL-Q's mark has not been redrawn for Icon
+    Composer — so the .icns is what the Dock shows, as it did on every
+    macOS before 26. The moment somebody adds the document back this
+    starts checking it again, which is why it is a skip and not a deletion.
+    """
     import json
+    if not ICON_DOCUMENT.is_dir():
+        pytest.skip(f"no layered icon document at {ICON_DOCUMENT}")
     manifest = json.loads((ICON_DOCUMENT / "icon.json").read_text())
     assert manifest["supported-platforms"] == {"squares": "shared"}
     assert manifest["fill"]["solid"].startswith("srgb:")
@@ -128,6 +140,7 @@ def test_the_liquid_icon_step_runs_on_the_mac_build_and_never_fails_it():
     script = (ROOT / "packaging" / "make_liquid_icon.sh").read_text()
     assert "actool" in script and "CFBundleIconName" in script
     assert script.count("exit 0") >= 3, "a missing Xcode must not fail the build"
+    assert "no $document" in script, "a missing document must not fail it either"
     assert "codesign --force --deep --sign -" in script
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
     build = workflow.index("name: Build\n")
@@ -140,7 +153,7 @@ def test_the_bundle_keeps_the_dock_icon_to_itself(monkeypatch):
     """Qt's window icon becomes the Dock icon on macOS and would cover the
     layered one; the bundle leaves the Dock to the bundle."""
     import sys
-    from openquant import app as app_module
+    from milq import app as app_module
     monkeypatch.setattr(sys, "platform", "darwin")
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     assert app_module._bundled_on_macos()

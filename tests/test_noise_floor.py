@@ -25,16 +25,16 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import infusion, infusion_report as ir  # noqa: E402
-from openquant import precursor as _precursor  # noqa: E402
-from openquant.labels import LABEL_MIN_RELATIVE  # noqa: E402
-from openquant.library import entry_from_spectrum  # noqa: E402
-from openquant.processing import (empty_regions, quiet_window,  # noqa: E402
+from milq import infusion, infusion_report as ir  # noqa: E402
+from milq import precursor as _precursor  # noqa: E402
+from milq.labels import LABEL_MIN_RELATIVE  # noqa: E402
+from milq.library import entry_from_spectrum  # noqa: E402
+from milq.processing import (empty_regions, quiet_window,  # noqa: E402
                                   spectrum_noise)
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.ui.explorer import ChannelRef, ExplorerWorkspace  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.ui.explorer import ChannelRef, ExplorerWorkspace  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 #: the background every scan sits on, and how much it moves scan to scan
 LEVEL = 5.0

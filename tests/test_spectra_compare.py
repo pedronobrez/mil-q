@@ -18,7 +18,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtGui, QtWidgets  # noqa: E402
 
-from openquant import spectra_compare as sc  # noqa: E402
+from milq import spectra_compare as sc  # noqa: E402
 
 
 @pytest.fixture(scope="module")

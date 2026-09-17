@@ -22,12 +22,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import report  # noqa: E402
-from openquant.calibration import CalibrationPoint, fit  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.quantify import PeakResult, ResultsSet  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq import report  # noqa: E402
+from milq.calibration import CalibrationPoint, fit  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.quantify import PeakResult, ResultsSet  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -268,7 +268,7 @@ def _comparison(mirror: bool = True):
     """Two synthetic spectra: one mass in both, one in each alone."""
     import numpy as np
 
-    from openquant import spectra_compare
+    from milq import spectra_compare
 
     def profile(peaks, step=0.005, width=0.012):
         mz = np.arange(100.0, 800.0, step)
@@ -294,7 +294,7 @@ def test_no_compared_spectra_no_section(qapp):
 
 
 def test_a_comparison_of_one_spectrum_does_not_stand(qapp):
-    from openquant import spectra_compare
+    from milq import spectra_compare
 
     session = _session(qapp)
     comparison = _comparison()

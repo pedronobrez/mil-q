@@ -16,12 +16,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.components import Component, IntegrationParams  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.processing import (PEAK_LARGEST, PEAK_NEAREST,  # noqa: E402
+from milq.components import Component, IntegrationParams  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.processing import (PEAK_LARGEST, PEAK_NEAREST,  # noqa: E402
                                   choose_peak, detect_peaks)
-from openquant.quantify import integrate_component  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
+from milq.quantify import integrate_component  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
 from tests.test_matching import Channel, Sample  # noqa: E402
 
 

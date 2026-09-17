@@ -23,8 +23,8 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import purity as P  # noqa: E402
-from openquant.chemistry import (adduct_from_name, isotope_pattern,  # noqa: E402
+from milq import purity as P  # noqa: E402
+from milq.chemistry import (adduct_from_name, isotope_pattern,  # noqa: E402
                                  monoisotopic_mass, parse_formula)
 
 #: cholic acid-d4 as its ammonium adduct: the standard this was written for
@@ -195,7 +195,7 @@ def test_the_ladder_is_read_as_a_lower_bound_and_says_so():
     ladder rung carrying its own envelope — including, as a dehydration can,
     fully-labelled molecules that left a label behind with the water.
     """
-    from openquant.explain import precursor_ions
+    from milq.explain import precursor_ions
 
     rung = next(ion for ion in precursor_ions(FORMULA, ADDUCT)
                 if ion.losses == ("H2O",) and ion.labels == 4)
@@ -242,7 +242,7 @@ def test_the_report_line_carries_both_figures_and_the_error():
 
 
 def test_the_report_paragraph_carries_the_envelope_and_the_refusal():
-    from openquant.infusion_report import InfusionReport, _purity_block
+    from milq.infusion_report import InfusionReport, _purity_block
 
     report = InfusionReport(compound="cholic acid-d4")
     assert _purity_block(report) == ""
@@ -266,7 +266,7 @@ def test_the_report_paragraph_carries_the_envelope_and_the_refusal():
 
 
 def test_a_record_carries_the_purity_because_nothing_can_recover_it():
-    from openquant.library import PURITY_FIELD, entry_from_spectrum, parse_msp
+    from milq.library import PURITY_FIELD, entry_from_spectrum, parse_msp
 
     mz, intensity = envelope([0.0, 0.0, 0.01, 0.04, 0.95])
     result = P.isotopic_purity(mz, intensity, FORMULA, ADDUCT)
@@ -277,7 +277,7 @@ def test_a_record_carries_the_purity_because_nothing_can_recover_it():
         isotopic_purity=result.field())
 
     assert entry.fields[PURITY_FIELD] == result.field()
-    from openquant.library import format_msp
+    from milq.library import format_msp
     back = parse_msp(format_msp([entry]))
     assert back[0].fields[PURITY_FIELD] == result.field()
 
@@ -306,7 +306,7 @@ def test_an_unrelated_ion_in_a_window_is_what_makes_the_constraint_bind():
     peak takes the *unconstrained* d1 to −0.125%, which is what a report
     would otherwise print as a composition.
     """
-    from openquant.chemistry import (adduct_from_name, monoisotopic_mass,
+    from milq.chemistry import (adduct_from_name, monoisotopic_mass,
                                      parse_formula)
 
     top = adduct_from_name(ADDUCT).mz(monoisotopic_mass(parse_formula(FORMULA)))

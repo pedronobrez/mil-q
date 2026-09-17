@@ -3,8 +3,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "openquant"
-# read from openquant/__init__.py: a version written twice is a version that
+name = "milq"
+# read from milq/__init__.py: a version written twice is a version that
 # will disagree with itself at the first bump
 dynamic = ["version"]
 description = "Open source quantitation and review for SCIEX LC-MS data (.wiff)"
@@ -21,24 +21,24 @@ dependencies = [
 ]
 
 [project.scripts]
-openquant = "openquant.app:main"
+milq = "milq.app:main"
 
 [tool.setuptools.dynamic]
-version = { attr = "openquant.__version__" }
+version = { attr = "milq.__version__" }
 
 [tool.setuptools.packages.find]
-include = ["openquant*"]
+include = ["milq*"]
 
 [tool.setuptools.package-data]
 # the second pattern is the manual's translations: a glob of one directory
 # does not reach into another, so a new language needs a line of its own
-openquant = ["help/pages/*.md", "help/pages/*/*.md", "icon.png"]
+milq = ["help/pages/*.md", "help/pages/*/*.md", "icon.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # `tests/real` is asserted against acquisitions that are not in the repository
 # and never will be. Those tests are skipped unless the data is asked for —
-# by `-m real` or by `OPENQUANT_REAL_DATA=1` — so CI, which has no data,
+# by `-m real` or by `MILQ_REAL_DATA=1` — so CI, which has no data,
 # runs the rest of the suite unchanged. See tests/real/README.md.
 markers = [
     "real: a regression over real data outside the repository (see tests/real/README.md)",

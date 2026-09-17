@@ -8,9 +8,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets
 
-from openquant.components import Component
-from openquant.samples import SampleEntry
-from openquant.session import (
+from milq.components import Component
+from milq.samples import SampleEntry
+from milq.session import (
     LEGACY_PROJECT_SUFFIX, PROJECT_SUFFIX, Session,
 )
 

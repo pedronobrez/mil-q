@@ -24,12 +24,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets  # noqa: E402
 
-from openquant import audit, standards  # noqa: E402
-from openquant import infusion_report as ir  # noqa: E402
-from openquant.components import (Component, load_components,  # noqa: E402
+from milq import audit, standards  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
+from milq.components import (Component, load_components,  # noqa: E402
                                   save_components)
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.session import Session  # noqa: E402
 
 #: cholic acid-d4 as its ammonium adduct: what the standards table, the four
 #: labels the name declares and `[M+NH4]+` come to
@@ -232,7 +232,7 @@ def test_the_fragment_note_says_when_the_base_peak_is_the_precursor():
 # the dialog and the trail
 # --------------------------------------------------------------------------- #
 def test_the_dialog_writes_the_ticked_rows_and_records_them(qapp):
-    from openquant.ui.standards_dialog import COL, StandardsDialog
+    from milq.ui.standards_dialog import COL, StandardsDialog
 
     session = Session()
     session.method.components.append(
@@ -277,7 +277,7 @@ def test_the_dialog_writes_the_ticked_rows_and_records_them(qapp):
 
 
 def test_a_refused_row_cannot_be_ticked(qapp):
-    from openquant.ui.standards_dialog import COL, StandardsDialog
+    from milq.ui.standards_dialog import COL, StandardsDialog
 
     session = Session()
     dialog = StandardsDialog(session, [_report(written=839.56)])
@@ -290,7 +290,7 @@ def test_a_refused_row_cannot_be_ticked(qapp):
 
 def test_a_second_infusion_of_one_compound_has_nothing_left_to_write(qapp):
     """Two energies of the same vial are one component, not two rows."""
-    from openquant.ui.standards_dialog import StandardsDialog
+    from milq.ui.standards_dialog import StandardsDialog
 
     session = Session()
     dialog = StandardsDialog(session, [_report(), _report()])
@@ -326,7 +326,7 @@ def test_provenance_round_trips_through_the_project(tmp_path):
 def test_the_method_table_shows_it_and_does_not_lose_it(qapp):
     """The table is committed whole on every edit; a field with no column of
     its own has to ride on one that has."""
-    from openquant.ui.method_workspace import COL, MethodWorkspace
+    from milq.ui.method_workspace import COL, MethodWorkspace
 
     session = Session()
     session.method.components.append(standards.component_from_infusion(_report()))

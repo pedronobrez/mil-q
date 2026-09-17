@@ -19,8 +19,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import energy  # noqa: E402
-from openquant import infusion_report as ir  # noqa: E402
+from milq import energy  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -409,7 +409,7 @@ def test_the_paragraph_reaches_the_report_only_with_more_than_one():
 # the dialog
 # --------------------------------------------------------------------------- #
 def test_the_dialog_shows_every_condition_and_writes_a_csv(qapp, tmp_path):
-    from openquant.ui.energy_dialog import EnergyDialog
+    from milq.ui.energy_dialog import EnergyDialog
 
     dialog = EnergyDialog(_three())
     assert dialog.table.rowCount() == 3
@@ -426,8 +426,8 @@ def test_the_dialog_shows_every_condition_and_writes_a_csv(qapp, tmp_path):
 def test_the_dialog_greys_a_row_that_is_out_of_the_choice(qapp):
     """The Considered cell is nineteen columns right of the compound, and a
     reader should not have to scroll to it to see that a row is marked."""
-    from openquant.ui import theme
-    from openquant.ui.energy_dialog import EnergyDialog
+    from milq.ui import theme
+    from milq.ui.energy_dialog import EnergyDialog
 
     rows = _three().rows + [_row(ce=12.0, sample="TESTEARTIGO",
                                  precursor=839.56, agrees=False,
@@ -441,7 +441,7 @@ def test_the_dialog_greys_a_row_that_is_out_of_the_choice(qapp):
 
 
 def test_the_dialog_of_nothing_measured_says_so(qapp):
-    from openquant.ui.energy_dialog import EnergyDialog
+    from milq.ui.energy_dialog import EnergyDialog
 
     dialog = EnergyDialog(_Summary([]))
     assert dialog.table.rowCount() == 0
@@ -451,8 +451,8 @@ def test_the_dialog_of_nothing_measured_says_so(qapp):
 
 
 def test_the_button_waits_for_a_measurement(qapp):
-    from openquant.session import Session
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.session import Session
+    from milq.ui.infusions_panel import InfusionsPanel
 
     panel = InfusionsPanel(Session())
     assert not panel.btn_energy.isEnabled()

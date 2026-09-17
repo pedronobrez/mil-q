@@ -8,12 +8,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets
 
-from openquant.components import Component, save_components
-from openquant.samples import QC, STANDARD, SampleEntry, UNKNOWN
-from openquant.session import (
+from milq.components import Component, save_components
+from milq.samples import QC, STANDARD, SampleEntry, UNKNOWN
+from milq.session import (
     PROJECT_SUFFIX, Session,
 )
-from openquant.ui.new_project import (
+from milq.ui.new_project import (
     METHOD, METHOD_EMPTY, METHOD_IMPORT, PROJECT, SAMPLES, SUMMARY,
     NewProjectWizard, StartDialog,
 )
@@ -154,7 +154,7 @@ def test_an_empty_method_is_the_default(qapp, wizard):
 
 
 def test_the_defaults_reach_the_method(qapp, wizard):
-    from openquant.method import ProcessingMethod
+    from milq.method import ProcessingMethod
     page = wizard.page(METHOD)
     page.tol_spin.setValue(20.0)
     page.unit_combo.setCurrentText("ppm")
@@ -246,12 +246,12 @@ def test_the_selftest_reports_without_opening_a_window(qapp, capsys):
     A packaged application either reads a .wiff or it does not, and the build
     machine has no one to click. This is how CI finds out.
     """
-    from openquant.app import _selftest
+    from milq.app import _selftest
 
     code = _selftest([])
     out = capsys.readouterr().out
     assert code == 0
-    assert "OpenQuant" in out
+    assert "MIL-Q" in out
     assert "LIPID MAPS index:" in out
     assert "SCIEX libraries:" in out
     # the index is an SQLite database, so a build without the sqlite3
@@ -263,7 +263,7 @@ def test_the_selftest_reports_without_opening_a_window(qapp, capsys):
 
 def test_a_file_it_cannot_read_is_a_failure_not_a_silence(qapp, tmp_path):
     """A build that packages the wrong assemblies must not exit zero."""
-    from openquant import app as app_module
+    from milq import app as app_module
 
     broken = tmp_path / "not-really.wiff"
     broken.write_text("nonsense")
@@ -278,7 +278,7 @@ def test_the_start_prompt_does_not_block_quitting(qapp):
     Cmd-Q, not the red button, not the Quit the system sends at logout. The
     only way out of a prompt offering to start some work was to answer it.
     """
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     shell.settings.setValue("shell/skip_start", False)
@@ -296,8 +296,8 @@ def test_the_start_prompt_does_not_block_quitting(qapp):
 
 
 def test_answering_the_start_prompt_still_does_what_it_says(qapp, monkeypatch):
-    from openquant.ui.shell import MainShell
-    from openquant.ui.new_project import StartDialog
+    from milq.ui.shell import MainShell
+    from milq.ui.new_project import StartDialog
 
     shell = MainShell()
     shell.settings.setValue("shell/skip_start", False)

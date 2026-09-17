@@ -16,12 +16,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.components import Component  # noqa: E402
-from openquant.mass_drift import (DRIFT_PPM, MASS_INDEX, MIN_INJECTIONS,  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.mass_drift import (DRIFT_PPM, MASS_INDEX, MIN_INJECTIONS,  # noqa: E402
                                   mass_drift, mass_trend)
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.precursor import measure  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.precursor import measure  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
 from tests.test_matching import Sample  # noqa: E402
 from tests.test_precursor import SpectrumChannel  # noqa: E402
 
@@ -171,9 +171,9 @@ def test_a_trend_from_measurements_counts_the_unconfirmed():
 def test_the_panel_and_the_report_show_a_measurement():
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant import report
-    from openquant.session import Session
-    from openquant.ui.mass_drift_panel import MassDriftPanel
+    from milq import report
+    from milq.session import Session
+    from milq.ui.mass_drift_panel import MassDriftPanel
 
     session = Session()
     session.entries = _batch(step_ppm=2.5)

@@ -36,15 +36,15 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import (api, chemistry, energy, folder,  # noqa: E402
+from milq import (api, chemistry, energy, folder,  # noqa: E402
                        infusion, infusion_compare, infusion_cover,
                        infusion_quant, infusion_report as ir, library as lib,
                        margin, mzml, standard_history, standards,
                        unexplained)
-from openquant.components import Component  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 #: a bile-acid standard whose name the standards table knows, carrying four
 #: labels its name declares and does not place — which is the case
@@ -251,7 +251,7 @@ def test_infusion_quantitation_reads_the_masked_average(opened):
     spray burst of whichever vial had one.
     """
     _row, _report, entry, channel = _first(opened)
-    from openquant.processing import centroid_spectrum
+    from milq.processing import centroid_spectrum
 
     masked = infusion_quant.centroids_of(channel, entry.sample)
     whole = infusion_quant.centroids_of(channel)

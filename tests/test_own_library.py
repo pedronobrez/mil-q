@@ -17,7 +17,7 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.library import (OWN_MAX_PEAKS, entry_from_spectrum,  # noqa: E402
+from milq.library import (OWN_MAX_PEAKS, entry_from_spectrum,  # noqa: E402
                                format_msp, load_library, parse_msp, write_msp)
 
 #: a made-up product spectrum with a base peak, two flanks and a whisper
@@ -121,7 +121,7 @@ def test_a_newline_in_a_field_cannot_end_the_record(tmp_path):
 # --------------------------------------------------------------------------- #
 @pytest.fixture
 def panel(qapp_module):
-    from openquant.ui.library_panel import LibraryPanel
+    from milq.ui.library_panel import LibraryPanel
     widget = LibraryPanel()
     yield widget
     widget.deleteLater()
@@ -274,7 +274,7 @@ def test_the_hook_may_carry_the_context_and_need_not(panel, tmp_path):
 
 
 def test_the_dialog_prefills_and_gives_back_what_was_typed(qapp_module):
-    from openquant.ui.library_add_dialog import AddToLibraryDialog
+    from milq.ui.library_add_dialog import AddToLibraryDialog
     from PyQt6.QtWidgets import QDialogButtonBox
 
     dialog = AddToLibraryDialog(
@@ -301,11 +301,11 @@ def test_the_explorer_hands_over_where_the_spectrum_came_from(qapp_module):
     A record has to say which file, sample, channel and scans it was made
     from, and the Explorer is the only place that knows.
     """
-    from openquant.samples import SampleEntry
-    from openquant.session import Session
-    from openquant.ui.explorer import ChannelRef, ExplorerWorkspace
-    from openquant.ui.plots import Trace
-    from openquant.wiff import ChannelInfo
+    from milq.samples import SampleEntry
+    from milq.session import Session
+    from milq.ui.explorer import ChannelRef, ExplorerWorkspace
+    from milq.ui.plots import Trace
+    from milq.wiff import ChannelInfo
 
     explorer = ExplorerWorkspace(Session())
     mz = np.linspace(100.0, 200.0, 201)
@@ -339,8 +339,8 @@ def test_the_explorer_hands_over_where_the_spectrum_came_from(qapp_module):
 
 
 def test_the_dialog_names_a_page_the_manual_has():
-    from openquant.manual import manual
-    from openquant.ui.library_add_dialog import HELP_PAGE
+    from milq.manual import manual
+    from milq.ui.library_add_dialog import HELP_PAGE
     assert HELP_PAGE in manual().pages
 
 
@@ -350,12 +350,12 @@ def test_the_comment_says_whether_the_adduct_was_measured_or_deduced(qapp_module
     at. Which of the two it was is the difference between a fact and a
     reading, so it goes in the comment beside the provenance.
     """
-    from openquant import chemistry as ch
-    from openquant.samples import SampleEntry
-    from openquant.session import Session
-    from openquant.ui.explorer import ChannelRef, ExplorerWorkspace
-    from openquant.ui.plots import Trace
-    from openquant.wiff import ChannelInfo
+    from milq import chemistry as ch
+    from milq.samples import SampleEntry
+    from milq.session import Session
+    from milq.ui.explorer import ChannelRef, ExplorerWorkspace
+    from milq.ui.plots import Trace
+    from milq.wiff import ChannelInfo
 
     explorer = ExplorerWorkspace(Session())
     mz = np.arange(425.0, 436.0, 0.002)
@@ -415,17 +415,17 @@ def test_the_comment_says_whether_the_adduct_was_measured_or_deduced(qapp_module
 # the provenance a record carries, the duplicate that provenance prevents, the
 # reason a row that produced nothing gives — and then reading the files again
 # and finding the same peaks.
-from openquant import infusion_report as ir  # noqa: E402
-from openquant.library import (Provenance, identity_of,  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
+from milq.library import (Provenance, identity_of,  # noqa: E402
                                own_peaks, provenance_comment, provenance_keys,
                                provenance_of, records_from_summary,
                                rewrite_records)
-from openquant.session import Session  # noqa: E402
+from milq.session import Session  # noqa: E402
 
 
 def _batch(qapp_module, *names):
     """A session of infused standards the method knows the formula of."""
-    from openquant.components import Component
+    from milq.components import Component
     from tests.test_infusion_report import ADDUCT, FORMULA, _entry, _ions
 
     session = Session()
@@ -748,8 +748,8 @@ def test_the_identity_is_read_off_the_report_and_not_guessed(qapp_module):
 # the two buttons
 # --------------------------------------------------------------------------- #
 def test_the_infusions_tab_writes_a_record_for_every_row(qapp_module, tmp_path):
-    from openquant import audit
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq import audit
+    from milq.ui.infusions_panel import InfusionsPanel
 
     session, _channels = _batch(qapp_module, "TESTOL_infusion_A",
                                 "TESTOL_infusion_B")

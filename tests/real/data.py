@@ -4,7 +4,7 @@ Where the real data is, and how a test says it is not there.
 None of these files is in the repository and none of them ever will be: they
 are acquisitions belonging to other people, some of them unpublished. Two of
 the five sets are named here because the repository already names them —
-`openquant/infusion.py` tabulates the bile-acid infusions by path and the
+`milq/infusion.py` tabulates the bile-acid infusions by path and the
 `260904_EICs_Isabela_*` runs sit in the working directory, ignored by git.
 The rest are found by environment variable or by an untracked
 `tests/real/data.local.json`, so that neither a folder name nor a sample name
@@ -93,7 +93,7 @@ def eics() -> list[str]:
     In the working directory, ignored by git; a worktree looks at the main
     checkout as well.
     """
-    for root in (os.environ.get("OPENQUANT_REAL_EICS"),
+    for root in (os.environ.get("MILQ_REAL_EICS"),
                  _local().get("eics"), *_checkouts()):
         if not root:
             continue
@@ -102,12 +102,12 @@ def eics() -> list[str]:
             return files
     pytest.skip("the five 260904_EICs_Isabela_*.wiff are not here: put them in "
                 f"the working directory ({', '.join(_checkouts())}) or set "
-                "OPENQUANT_REAL_EICS to the folder holding them")
+                "MILQ_REAL_EICS to the folder holding them")
 
 
 def infusions() -> str:
     """The folder of nine ZenoTOF 7600 bile-acid infusions."""
-    return _require("infusions", "OPENQUANT_REAL_INFUSIONS",
+    return _require("infusions", "MILQ_REAL_INFUSIONS",
                     "the bile-acid infusion folder",
                     ("/Volumes/NOBRE/Cyborg/Bileomics",))
 
@@ -122,7 +122,7 @@ def infusion_files() -> list[str]:
 
 def batch() -> str:
     """The folder of the 26-injection sphingolipid batch (somebody's method)."""
-    return _require("batch", "OPENQUANT_REAL_BATCH",
+    return _require("batch", "MILQ_REAL_BATCH",
                     "the 26-injection sphingolipid folder")
 
 
@@ -135,13 +135,13 @@ def batch_files() -> list[str]:
 
 def project() -> str:
     """The `.oqproj` of that batch, reprocessed under the corrected method."""
-    return _require("project", "OPENQUANT_REAL_PROJECT",
+    return _require("project", "MILQ_REAL_PROJECT",
                     "the sphingolipid project file")
 
 
 def dia() -> str:
     """The folder of eight DIA lipidomics runs."""
-    return _require("dia", "OPENQUANT_REAL_DIA", "the DIA lipidomics folder")
+    return _require("dia", "MILQ_REAL_DIA", "the DIA lipidomics folder")
 
 
 def orbitrap() -> str:
@@ -151,10 +151,10 @@ def orbitrap() -> str:
 
     These were never anywhere permanent — downloaded into a scratch directory
     to answer one question — so the tests that want them skip themselves far
-    more often than not. Point `OPENQUANT_REAL_ORBITRAP` at whatever folder
+    more often than not. Point `MILQ_REAL_ORBITRAP` at whatever folder
     holds `180A_D_H_ms1.mzML` and `180A_D_H_1Dawin_0-02step_35NCE.mzML`.
     """
-    return _require("orbitrap", "OPENQUANT_REAL_ORBITRAP",
+    return _require("orbitrap", "MILQ_REAL_ORBITRAP",
                     "the MTBLS13066 Orbitrap mzML folder")
 
 

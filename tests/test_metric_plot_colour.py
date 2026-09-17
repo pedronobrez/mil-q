@@ -8,15 +8,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets
 
-from openquant.components import Component
-from openquant.quantify import PeakResult, ResultsSet
-from openquant.samples import QC, SampleEntry, UNKNOWN
-from openquant.session import Session
-from openquant.ui.metric_plot import (
+from milq.components import Component
+from milq.quantify import PeakResult, ResultsSet
+from milq.samples import QC, SampleEntry, UNKNOWN
+from milq.session import Session
+from milq.ui.metric_plot import (
     BY_SAMPLE_GROUP, BY_SAMPLE_TYPE, NO_COLOUR, UNGROUPED, UNGROUPED_COLOUR,
     MetricPlotPanel,
 )
-from openquant.ui.plots import colour
+from milq.ui.plots import colour
 
 
 @pytest.fixture(scope="module")

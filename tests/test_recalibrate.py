@@ -15,12 +15,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.components import Component  # noqa: E402
-from openquant.mass_drift import mass_drift  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.quantify import extract_xic, integrate_component, process  # noqa: E402
-from openquant.precursor import CONSENSUS_SPREAD_PPM  # noqa: E402
-from openquant.recalibrate import (BATCH_SOURCE, LADDER_SOURCE,  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.mass_drift import mass_drift  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.quantify import extract_xic, integrate_component, process  # noqa: E402
+from milq.precursor import CONSENSUS_SPREAD_PPM  # noqa: E402
+from milq.recalibrate import (BATCH_SOURCE, LADDER_SOURCE,  # noqa: E402
                                    LockMass, MassCorrection,
                                    MAX_LOCK_ERROR_PPM, MIN_LADDER_RUNGS,
                                    MIN_MASS_SPAN, MIN_SLOPE_LOCK_MASSES,
@@ -28,8 +28,8 @@ from openquant.recalibrate import (BATCH_SOURCE, LADDER_SOURCE,  # noqa: E402
                                    fit_correction, fit_infusion,
                                    ladder_rungs, lock_mass_refusal,
                                    lock_masses_from_drift)
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
 from tests.test_matching import Sample  # noqa: E402
 from tests.test_precursor import SpectrumChannel  # noqa: E402
 
@@ -303,7 +303,7 @@ def test_an_ion_measured_steadily_at_the_wrong_mass_passes_same_ion():
 
 def test_without_the_gate_the_impostor_is_a_lock_mass(monkeypatch):
     """The same batch with the limit lifted: it fits, and fits wrongly."""
-    monkeypatch.setattr("openquant.recalibrate.MAX_LOCK_ERROR_PPM", 1e9)
+    monkeypatch.setattr("milq.recalibrate.MAX_LOCK_ERROR_PPM", 1e9)
     entries = [_entry(f"S{i:02d}", IMPOSTOR_PPM) for i in range(6)]
     method = _method()
     drift = mass_drift(entries, method)
@@ -482,7 +482,7 @@ def test_extraction_without_a_correction_is_untouched():
 
 
 def test_the_precursor_measurement_reports_raw_and_corrected():
-    from openquant.precursor import measure
+    from milq.precursor import measure
 
     entry = _entry("S00", 7.0)
     method = _method()
@@ -511,7 +511,7 @@ def qt_app():
 
 
 def test_the_panel_fits_and_shows_the_corrections(qt_app):
-    from openquant.ui.mass_drift_panel import MassDriftPanel
+    from milq.ui.mass_drift_panel import MassDriftPanel
 
     session = Session()
     session.entries = [_entry(f"S{i:02d}", 7.0) for i in range(6)]
@@ -540,7 +540,7 @@ def test_the_panel_fits_and_shows_the_corrections(qt_app):
 
 
 def test_the_report_prints_the_corrections_and_says_whether_they_applied():
-    from openquant.report import build_html
+    from milq.report import build_html
 
     session = Session()
     session.entries = [_entry(f"S{i:02d}", 7.0) for i in range(6)]
@@ -567,7 +567,7 @@ def test_the_explorer_moves_the_spectrum_axis_and_says_so(qt_app):
     The one thing worse than a mass axis that is wrong is one that has been
     moved and does not admit it, so the title carries the number.
     """
-    from openquant.ui.explorer import ChannelRef, ExplorerWorkspace
+    from milq.ui.explorer import ChannelRef, ExplorerWorkspace
 
     session = Session()
     entry = _entry("S00", 7.0)
@@ -593,7 +593,7 @@ def test_the_explorer_moves_the_spectrum_axis_and_says_so(qt_app):
 def test_the_panel_names_the_refused_standard_in_its_verdict(qt_app):
     """A wrong ion measured steadily looks like a well-behaved standard in
     every column but this one."""
-    from openquant.ui.mass_drift_panel import MassDriftPanel
+    from milq.ui.mass_drift_panel import MassDriftPanel
 
     session = Session()
     session.entries = [_entry(f"S{i:02d}", IMPOSTOR_PPM) for i in range(6)]
@@ -612,7 +612,7 @@ def test_the_panel_names_the_refused_standard_in_its_verdict(qt_app):
 
 
 def test_the_report_names_the_refused_standard_too():
-    from openquant.report import build_html
+    from milq.report import build_html
 
     session = Session()
     session.entries = [_entry(f"S{i:02d}", IMPOSTOR_PPM) for i in range(6)]
@@ -635,7 +635,7 @@ LADDER_ADDUCT = "[M+NH4]+"
 
 
 def _rungs_of(count: int):
-    from openquant.explain import precursor_ions
+    from milq.explain import precursor_ions
 
     return sorted(precursor_ions(LADDER_FORMULA, LADDER_ADDUCT, 0),
                   key=lambda ion: -ion.mz)[:count]
@@ -739,7 +739,7 @@ def test_a_ladder_outside_the_window_is_simply_not_found():
 
 
 def test_a_rung_under_the_intensity_floor_is_not_a_measurement():
-    from openquant.precursor import MIN_INTENSITY
+    from milq.precursor import MIN_INTENSITY
 
     mz, intensity = _ladder(+6.0, rungs=4,
                             heights=[10_000.0, 9_000.0, MIN_INTENSITY - 1, 1.0])
@@ -819,7 +819,7 @@ def test_the_panel_shows_an_infusion_row_with_its_own_source(qt_app):
     The mass-drift panel's table is where every correction is reviewed, and
     an infusion's has to appear there with no drift measured at all.
     """
-    from openquant.ui.mass_drift_panel import MassDriftPanel
+    from milq.ui.mass_drift_panel import MassDriftPanel
 
     session = Session()
     entry = _entry("CA-d4", 0.0)

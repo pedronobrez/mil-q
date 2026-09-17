@@ -86,7 +86,7 @@ def _checkouts() -> tuple[str, ...]:
 @functools.cache
 def eics() -> tuple[str, ...]:
     """The five `260904_EICs_Isabela_*.wiff`, in the working directory."""
-    roots = [os.environ.get("OPENQUANT_REAL_EICS"), *_checkouts()]
+    roots = [os.environ.get("MILQ_REAL_EICS"), *_checkouts()]
     for root in roots:
         if not root:
             continue
@@ -102,7 +102,7 @@ def one_wiff() -> str:
 
 
 def one_mzml() -> str:
-    for root in [os.environ.get("OPENQUANT_REAL_EICS"), *_checkouts()]:
+    for root in [os.environ.get("MILQ_REAL_EICS"), *_checkouts()]:
         if not root:
             continue
         files = sorted(glob.glob(os.path.join(root, "*.mzML")))
@@ -112,7 +112,7 @@ def one_mzml() -> str:
 
 
 def infusion_folder() -> str:
-    for candidate in (os.environ.get("OPENQUANT_REAL_INFUSIONS"),
+    for candidate in (os.environ.get("MILQ_REAL_INFUSIONS"),
                       "/Volumes/NOBRE/Cyborg/Bileomics"):
         if candidate and os.path.isdir(candidate):
             return candidate
@@ -132,43 +132,43 @@ def scenario(name: str, what: str):
     return register
 
 
-@scenario("import-api", "import openquant.api")
+@scenario("import-api", "import milq.api")
 def _import_api():
     import subprocess
-    subprocess.run([sys.executable, "-c", "import openquant.api"],
+    subprocess.run([sys.executable, "-c", "import milq.api"],
                    cwd=ROOT, check=True)
 
 
 @scenario("import-ui", "import the whole user interface")
 def _import_ui():
     import subprocess
-    subprocess.run([sys.executable, "-c", "import openquant.ui.shell"],
+    subprocess.run([sys.executable, "-c", "import milq.ui.shell"],
                    cwd=ROOT, check=True)
 
 
 @scenario("bootstrap", "bring up .NET and the SCIEX assemblies")
 def _bootstrap():
-    from openquant import bootstrap
+    from milq import bootstrap
     bootstrap.ensure()
 
 
 @scenario("open", "open one .wiff and list its channels")
 def _open():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         return len(acquisition.channels)
 
 
 @scenario("tics", "every channel's chromatogram of one sample")
 def _tics():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         return sum(len(channel.tic()) for channel in acquisition.channels)
 
 
 @scenario("spectra", "25 spectra off the busiest channel")
 def _spectra():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         channel = _busiest(acquisition)
         scans = len(channel.tic())
@@ -178,7 +178,7 @@ def _spectra():
 
 @scenario("average", "average 100 scans of the busiest channel")
 def _average():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         channel = _busiest(acquisition)
         times = channel.tic().arrays()[0]
@@ -188,7 +188,7 @@ def _average():
 
 @scenario("xic", "an extracted ion chromatogram over the busiest channel")
 def _xic():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         channel = _busiest(acquisition)
         info = channel.reader.info
@@ -198,8 +198,8 @@ def _xic():
 
 @scenario("peaks", "detect peaks in every channel of one sample")
 def _peaks():
-    from openquant import api
-    from openquant import processing
+    from milq import api
+    from milq import processing
     found = 0
     with api.open(one_wiff()) as acquisition:
         for channel in acquisition.channels:
@@ -210,7 +210,7 @@ def _peaks():
 
 @scenario("centroid", "centroid 25 profile spectra")
 def _centroid():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         channel = _busiest(acquisition)
         scans = len(channel.tic())
@@ -221,7 +221,7 @@ def _centroid():
 
 @scenario("pick-peaks", "the top peaks of 25 profile spectra")
 def _pick_peaks():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         channel = _busiest(acquisition)
         scans = len(channel.tic())
@@ -232,8 +232,8 @@ def _pick_peaks():
 
 @scenario("contour", "the run as a retention time by m/z grid")
 def _contour():
-    from openquant import api
-    from openquant.contour import build_contour
+    from milq import api
+    from milq.contour import build_contour
     with api.open(one_wiff()) as acquisition:
         grid = build_contour(_busiest(acquisition).reader)
         return grid.intensity.shape
@@ -242,8 +242,8 @@ def _contour():
 @scenario("quantify", "81 components integrated over the five acquisitions")
 def _quantify():
     _qt_app()
-    from openquant.session import Session
-    from openquant import quantify
+    from milq.session import Session
+    from milq import quantify
     session = Session()
     for path in eics():
         session.open_file(path)
@@ -257,7 +257,7 @@ def _quantify():
 
 @scenario("bpc", "a base peak chromatogram over the busiest channel")
 def _bpc():
-    from openquant import api
+    from milq import api
     with api.open(one_wiff()) as acquisition:
         return len(_busiest(acquisition).reader.bpc())
 
@@ -271,7 +271,7 @@ def _mzml_xic():
     channel on every call and keep nothing, so a method asking for eighty
     components asked eighty times.
     """
-    from openquant import api
+    from milq import api
     with api.open(one_mzml()) as acquisition:
         channel = _busiest(acquisition)
         info = channel.reader.info
@@ -285,7 +285,7 @@ def _mzml_xic():
 
 @scenario("mzml-bpc", "every channel's base peak chromatogram off one mzML")
 def _mzml_bpc():
-    from openquant import api
+    from milq import api
     with api.open(one_mzml()) as acquisition:
         return sum(len(channel.reader.bpc()[0])
                    for channel in acquisition.channels)
@@ -293,7 +293,7 @@ def _mzml_bpc():
 
 @scenario("mzml-spectra", "decode 25 spectra out of one mzML")
 def _mzml_spectra():
-    from openquant import api
+    from milq import api
     with api.open(one_mzml()) as acquisition:
         channel = _busiest(acquisition)
         scans = len(channel.tic())
@@ -303,7 +303,7 @@ def _mzml_spectra():
 
 @scenario("sampling", "the sampling report over the batch")
 def _sampling():
-    from openquant import sampling
+    from milq import sampling
     session, results = _processed()
     report = sampling.sampling_report(results, session.entries, session.method)
     session.close_all()
@@ -312,7 +312,7 @@ def _sampling():
 
 @scenario("compare", "every integration algorithm run over the batch")
 def _compare():
-    from openquant import compare
+    from milq import compare
     session, _ = _processed()
     comparison = compare.compare_algorithms(session.entries, session.method,
                                             cache=session.cache)
@@ -323,8 +323,8 @@ def _compare():
 def _processed():
     """The five acquisitions opened, componented and integrated once."""
     _qt_app()
-    from openquant.session import Session
-    from openquant import quantify
+    from milq.session import Session
+    from milq import quantify
     session = Session()
     for path in eics():
         session.open_file(path)
@@ -336,7 +336,7 @@ def _processed():
 
 @scenario("mzml-read", "read one mzML end to end")
 def _mzml_read():
-    from openquant import api
+    from milq import api
     with api.open(one_mzml()) as acquisition:
         return sum(len(channel.tic()) for channel in acquisition.channels)
 
@@ -349,7 +349,7 @@ def _busiest(acquisition):
 def _digest():
     import subprocess
     files = eics()
-    subprocess.run([sys.executable, "-m", "openquant.app", "--digest", *files],
+    subprocess.run([sys.executable, "-m", "milq.app", "--digest", *files],
                    cwd=ROOT, check=True, capture_output=True)
 
 
@@ -364,7 +364,7 @@ def _explorer_open():
     changes?" box — which, offscreen, nobody can answer.
     """
     app = _qt_app()
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
     window = MainShell()
     window.show()
     app.processEvents()
@@ -379,7 +379,7 @@ def _explorer_open():
 @scenario("open-five", "open all five acquisitions in the window")
 def _open_five():
     app = _qt_app()
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
     window = MainShell()
     window.show()
     app.processEvents()
@@ -395,7 +395,7 @@ def _open_five():
 @scenario("shell", "build the main window")
 def _shell():
     app = _qt_app()
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
     window = MainShell()
     window.show()
     app.processEvents()
@@ -407,7 +407,7 @@ def _shell():
 def _shell_tabs():
     app = _qt_app()
     from PyQt6 import QtWidgets
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
     window = MainShell()
     window.show()
     app.processEvents()
@@ -422,7 +422,7 @@ def _shell_tabs():
 @scenario("review-relayout", "the peak review grid rebuilt at 1x1 … 8x8")
 def _review_relayout():
     _qt_app()
-    from openquant.ui.peak_review import PeakReviewGrid
+    from milq.ui.peak_review import PeakReviewGrid
     grid = PeakReviewGrid()
     grid.resize(1200, 700)
     for columns, rows in ((1, 1), (3, 2), (4, 4), (6, 6), (8, 8), (3, 2)):
@@ -435,7 +435,7 @@ def _review_relayout():
 def _manual_pdf():
     _qt_app()
     import tempfile
-    from openquant import manual
+    from milq import manual
     out = os.path.join(tempfile.mkdtemp(), "manual.pdf")
     manual.load().write_pdf(out)
     return os.path.getsize(out)
@@ -448,7 +448,7 @@ def _infusion_report():
     if not files:
         raise Skip(f"no .wiff in {folder}")
     _qt_app()
-    from openquant import api
+    from milq import api
     return api.infusion_report(files[0]) is not None
 
 

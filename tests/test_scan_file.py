@@ -20,11 +20,11 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.components import Component  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.quantify import integrate_component  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.wiff import ChannelInfo, scan_problem, stray_scan_files  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.quantify import integrate_component  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.wiff import ChannelInfo, scan_problem, stray_scan_files  # noqa: E402
 
 MISSING = "Could not open data stream. Is a required 'scan' file missing?"
 NO_ASSEMBLY = "Could not load file or assembly 'OFX.Core.Contracts, Version=1.0.0.0'"
@@ -123,8 +123,8 @@ def test_a_companion_that_is_there_but_unreadable_quotes_the_reader(tmp_path):
 def test_the_spectrum_pane_says_why_it_is_empty():
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     session = Session()
     entry = _entry()
@@ -166,9 +166,9 @@ def test_the_spectrum_pane_says_why_it_is_empty():
 def test_a_pinned_spectrum_survives_a_live_one_that_cannot_be_read():
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
-    from openquant.ui.plots import Trace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
+    from milq.ui.plots import Trace
 
     session = Session()
     session.entries.append(_entry())
@@ -211,5 +211,5 @@ def test_the_problem_is_not_saved_with_the_project():
 
 @pytest.mark.parametrize("name", ["a.wiff", "A.WIFF"])
 def test_the_companion_is_the_name_plus_scan(name, tmp_path):
-    from openquant.wiff import scan_file_of
+    from milq.wiff import scan_file_of
     assert scan_file_of(tmp_path / name) == str(tmp_path / name) + ".scan"

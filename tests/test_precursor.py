@@ -8,9 +8,9 @@ synthetic spectrum, and a product-ion channel carrying the surviving precursor.
 import numpy as np
 import pytest
 
-from openquant import precursor
-from openquant.components import Component
-from openquant.samples import SampleEntry
+from milq import precursor
+from milq.components import Component
+from milq.samples import SampleEntry
 from tests.test_matching import Channel, Sample
 
 
@@ -199,7 +199,7 @@ def test_a_measured_mass_narrows_the_search_window(monkeypatch):
     The point of the whole exercise: a written mass is searched loose, a
     measured one at the instrument's accuracy.
     """
-    from openquant.ui import annotate_dialog as ad
+    from milq.ui import annotate_dialog as ad
 
     class FakeDatabase:
         def __init__(self):
@@ -227,7 +227,7 @@ def test_a_measured_mass_narrows_the_search_window(monkeypatch):
 
 
 def test_an_unreliable_measurement_falls_back_to_the_written_mass(monkeypatch):
-    from openquant.ui import annotate_dialog as ad
+    from milq.ui import annotate_dialog as ad
 
     seen = []
 
@@ -251,7 +251,7 @@ def test_an_unreliable_measurement_falls_back_to_the_written_mass(monkeypatch):
 def test_the_adduct_tolerance_is_the_consensus_spread_and_not_a_fourth_number():
     """One figure for "these two measurements are of the same ion", used by
     the consensus, the mass drift and now the adduct."""
-    from openquant import chemistry
+    from milq import chemistry
 
     assert chemistry.survey_tolerance_ppm() == precursor.CONSENSUS_SPREAD_PPM
 
@@ -260,7 +260,7 @@ def test_the_survey_channel_confirms_the_adduct_of_a_written_precursor():
     """The survey found the way the rest of this module finds it — the
     full-scan channel covering the mass at that time — read for the adduct
     rather than for the precursor alone."""
-    from openquant import chemistry
+    from milq import chemistry
 
     formula = "C24H36D4O5"
     pattern = chemistry.ion_pattern(
@@ -291,7 +291,7 @@ def test_an_acquisition_with_no_survey_offers_nothing_to_confirm_with():
     """Nine real bile-acid infusions have no full-scan channel at all, so
     there is no spectrum to hand in and the adduct stays what the written
     precursor makes it."""
-    from openquant import chemistry
+    from milq import chemistry
 
     product = SpectrumChannel(0, 430.35, 50.0, 450.0, 12.0, 14.0, n=200,
                               ions=[(183.0, 1.0)], apex=13.1)

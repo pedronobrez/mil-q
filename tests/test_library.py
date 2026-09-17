@@ -15,7 +15,7 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.library import (SpectralLibrary, load_library, match,  # noqa: E402
+from milq.library import (SpectralLibrary, load_library, match,  # noqa: E402
                                parse_mgf, parse_msp)
 
 MSP = """Name: Sphingomyelin d18:1/16:0
@@ -352,7 +352,7 @@ def test_a_library_is_loaded_by_extension(tmp_path):
 def test_the_panel_loads_searches_and_offers_the_overlay(tmp_path):
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.ui.library_panel import LibraryPanel
+    from milq.ui.library_panel import LibraryPanel
 
     path = tmp_path / "lib.msp"
     path.write_text(MSP, encoding="utf-8")

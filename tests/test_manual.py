@@ -20,8 +20,8 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import manual as manual_module  # noqa: E402
-from openquant.manual import (DEFAULT_LANGUAGE, HOME, INDEX,  # noqa: E402
+from milq import manual as manual_module  # noqa: E402
+from milq.manual import (DEFAULT_LANGUAGE, HOME, INDEX,  # noqa: E402
                               LANGUAGES, PAGES_DIR, SECTION_TITLES, STRINGS,
                               Manual, load, pages_dir, read_page,
                               render_markdown)
@@ -249,7 +249,7 @@ def qapp():
 
 def test_the_window_opens_on_the_home_page_and_follows_links(qapp, manual):
     from PyQt6 import QtCore
-    from openquant.ui.help_window import HelpWindow
+    from milq.ui.help_window import HelpWindow
 
     window = HelpWindow(manual=manual)
     assert window.current_page == HOME
@@ -268,7 +268,7 @@ def test_the_window_opens_on_the_home_page_and_follows_links(qapp, manual):
 
 
 def test_the_shell_opens_the_manual_from_its_help_menu(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     shell.show_manual("peak-review")
@@ -316,8 +316,8 @@ def test_a_translated_manual_prints(qapp, translated, tmp_path):
 
 
 def test_the_window_switches_language_keeps_the_page_and_remembers(qapp):
-    from openquant.ui.help_window import SETTING_LANGUAGE, HelpWindow
-    from openquant.ui.settings import settings
+    from milq.ui.help_window import SETTING_LANGUAGE, HelpWindow
+    from milq.ui.settings import settings
 
     if not TRANSLATIONS:
         pytest.skip("the manual has only one language")
@@ -348,8 +348,8 @@ def test_the_window_switches_language_keeps_the_page_and_remembers(qapp):
 
 
 def test_a_new_window_opens_in_the_language_last_read(qapp):
-    from openquant.ui.help_window import SETTING_LANGUAGE, HelpWindow
-    from openquant.ui.settings import settings
+    from milq.ui.help_window import SETTING_LANGUAGE, HelpWindow
+    from milq.ui.settings import settings
 
     if not TRANSLATIONS:
         pytest.skip("the manual has only one language")

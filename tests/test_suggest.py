@@ -10,10 +10,10 @@ and the cases where nothing should be offered at all.
 import numpy as np
 import pytest
 
-from openquant.components import Component
-from openquant.method import ProcessingMethod
-from openquant.samples import SampleEntry
-from openquant.suggest import (estimate_time, suggest_times, suggest_windows)
+from milq.components import Component
+from milq.method import ProcessingMethod
+from milq.samples import SampleEntry
+from milq.suggest import (estimate_time, suggest_times, suggest_windows)
 from tests.test_matching import Channel, Sample
 
 STEP = 14.6 / 60.0

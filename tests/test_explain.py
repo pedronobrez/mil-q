@@ -9,14 +9,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from pathlib import Path
 
-from openquant.explain import (
+from milq.explain import (
     explain,
     match_peaks,
     rank_candidates,
     significant_peaks,
 )
-from openquant.lipidmaps import LipidDatabase, LipidRecord
-from openquant.structure import parse_molblock, predict
+from milq.lipidmaps import LipidDatabase, LipidRecord
+from milq.structure import parse_molblock, predict
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -140,8 +140,8 @@ def test_one_structure_per_species_is_scored(database):
 
 # -- letting the spectrum choose between routes ------------------------------- #
 def test_a_route_implies_its_own_intermediates(cholic):
-    from openquant.explain import companion_masses
-    from openquant.structure import predict
+    from milq.explain import companion_masses
+    from milq.structure import predict
 
     ions = predict(cholic.molecule(), max_cuts=1, max_losses=2)
     two_waters = next(i for i in ions if i.losses == ("H2O", "H2O"))
@@ -153,8 +153,8 @@ def test_a_route_implies_its_own_intermediates(cholic):
 
 
 def test_a_route_with_no_losses_implies_nothing(cholic):
-    from openquant.explain import companion_masses
-    from openquant.structure import predict
+    from milq.explain import companion_masses
+    from milq.structure import predict
 
     ions = predict(cholic.molecule(), max_cuts=1, max_losses=0)
     assert companion_masses(cholic.molecule(), ions[0]) == []
@@ -162,13 +162,13 @@ def test_a_route_with_no_losses_implies_nothing(cholic):
 
 def test_the_route_whose_ladder_is_present_wins(cholic):
     """Two routes reach one mass; only the companions separate them."""
-    from openquant.explain import routes_for
-    from openquant.structure import predict
+    from milq.explain import routes_for
+    from milq.structure import predict
 
     molecule = cholic.molecule()
     ions = predict(molecule, max_cuts=1, max_losses=2)
     target = next(i for i in ions if i.losses == ("H2O", "H2O"))
-    from openquant.explain import companion_masses
+    from milq.explain import companion_masses
 
     with_ladder = [(target.mz, 100.0)] + [
         (m, 50.0) for m in companion_masses(molecule, target)]
@@ -189,8 +189,8 @@ def test_the_match_carries_the_route_the_spectrum_supports(cholic):
 
 def test_a_spectrum_that_cannot_tell_them_apart_says_so(cholic):
     """No ladder present is an honest answer, not a reason to pick one."""
-    from openquant.explain import routes_for
-    from openquant.structure import predict
+    from milq.explain import routes_for
+    from milq.structure import predict
 
     molecule = cholic.molecule()
     target = next(i for i in predict(molecule, max_cuts=1, max_losses=2)
@@ -203,7 +203,7 @@ def test_a_spectrum_that_cannot_tell_them_apart_says_so(cholic):
 # a structure or formula the database does not hold
 # --------------------------------------------------------------------------- #
 def test_a_formula_alone_gives_the_precursor_and_its_losses():
-    from openquant.explain import explain_formula, formula_ions
+    from milq.explain import explain_formula, formula_ions
 
     ions = formula_ions("C24H40O5", "[M-H]-")
     descriptions = {ion.description for ion in ions}
@@ -226,7 +226,7 @@ def test_a_formula_alone_gives_the_precursor_and_its_losses():
 
 
 def test_unplaced_deuterium_offers_every_count_and_the_spectrum_picks_one():
-    from openquant.explain import D_MINUS_H, explain_formula
+    from milq.explain import D_MINUS_H, explain_formula
 
     # a d4 cholic acid: the intact ion carries all four; a water loss may
     # have taken one with it
@@ -240,8 +240,8 @@ def test_unplaced_deuterium_offers_every_count_and_the_spectrum_picks_one():
 
 
 def test_a_drawing_of_ones_own_is_scored_like_a_record(tmp_path):
-    from openquant.explain import explain_structure, read_molfile, with_labels
-    from openquant.structure import predict
+    from milq.explain import explain_structure, read_molfile, with_labels
+    from milq.structure import predict
 
     hexanol = """1-hexanol
   test
@@ -280,7 +280,7 @@ def test_the_panel_explains_with_a_formula():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     panel = LipidPanel()
     import numpy as np
@@ -355,7 +355,7 @@ M  END
 
 
 def labelled_ions(molecule, deuterium=3):
-    from openquant.explain import with_labels
+    from milq.explain import with_labels
 
     return with_labels(predict(molecule, charge=-1, max_cuts=1, max_losses=0),
                        deuterium)
@@ -371,7 +371,7 @@ def one_ion(ions, atoms, labels):
 
 def observed(molecule, ions, seen, rivals=None):
     """An explanation made by hand: these ions, matched exactly."""
-    from openquant.explain import Explanation, PeakMatch, custom_record
+    from milq.explain import Explanation, PeakMatch, custom_record
 
     matches = [PeakMatch(mz=ion.mz, intensity=height, ion=ion)
                for ion, height in seen]
@@ -384,7 +384,7 @@ def observed(molecule, ions, seen, rivals=None):
 
 
 def test_a_piece_that_kept_none_of_the_labels_rules_its_atoms_out():
-    from openquant.explain import infer_labels, read_molfile
+    from milq.explain import infer_labels, read_molfile
 
     molecule, _name = read_molfile(HEXANOIC)
     ions = labelled_ions(molecule)
@@ -400,7 +400,7 @@ def test_a_piece_that_kept_none_of_the_labels_rules_its_atoms_out():
 
 
 def test_a_piece_that_kept_all_of_them_rules_its_atoms_in_and_ties():
-    from openquant.explain import infer_labels, read_molfile
+    from milq.explain import infer_labels, read_molfile
 
     molecule, _name = read_molfile(HEXANOIC)
     ions = labelled_ions(molecule)
@@ -417,7 +417,7 @@ def test_a_piece_that_kept_all_of_them_rules_its_atoms_in_and_ties():
 
 
 def test_two_pieces_together_place_the_labels():
-    from openquant.explain import infer_labels, read_molfile
+    from milq.explain import infer_labels, read_molfile
 
     molecule, _name = read_molfile(HEXANOIC)
     ions = labelled_ions(molecule)
@@ -439,7 +439,7 @@ def test_two_pieces_together_place_the_labels():
 
 
 def test_heteroatom_bound_positions_are_left_out_unless_asked_for():
-    from openquant.explain import label_positions, read_molfile
+    from milq.explain import label_positions, read_molfile
 
     molecule, _name = read_molfile(HEXANOIC)
     carbon = label_positions(molecule)
@@ -450,7 +450,7 @@ def test_heteroatom_bound_positions_are_left_out_unless_asked_for():
 
 
 def test_a_drawing_that_places_its_labels_is_checked_not_inferred():
-    from openquant.explain import infer_labels, placed_labels, read_molfile
+    from milq.explain import infer_labels, placed_labels, read_molfile
 
     molecule, name = read_molfile(HEXANOIC_D3)
     assert name == "hexanoic acid-d3"
@@ -467,7 +467,7 @@ def test_a_drawing_that_places_its_labels_is_checked_not_inferred():
 
 
 def test_a_peak_two_label_counts_reach_is_not_used():
-    from openquant.explain import infer_labels, read_molfile
+    from milq.explain import infer_labels, read_molfile
 
     molecule, _name = read_molfile(HEXANOIC)
     ions = labelled_ions(molecule)
@@ -489,9 +489,9 @@ def test_the_panel_places_the_labels_under_the_table():
     import numpy as np
     from PyQt6 import QtWidgets
 
-    from openquant.explain import read_molfile
+    from milq.explain import read_molfile
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     molecule, _name = read_molfile(HEXANOIC)
     ions = labelled_ions(molecule)
@@ -532,7 +532,7 @@ def test_a_labile_adduct_leaves_and_the_ladder_hangs_off_the_proton():
     intact at 430.35 and then as [M+H]+ at 413.32, and every dehydration
     hangs off the 413 — `[M+NH4-H2O]+` is not a species, because the
     ammonia is gone before a hydroxyl leaves."""
-    from openquant.explain import formula_ions
+    from milq.explain import formula_ions
 
     ions = formula_ions(CA_D4, "[M+NH4]+")
 
@@ -554,7 +554,7 @@ def test_a_dehydration_may_take_a_label_with_it_and_the_rung_says_so():
     """Measured on the real CID spectrum: 359.2870 is the three-water loss
     keeping all four labels and 358.2808 beside it is the same ion keeping
     three, 1.0062 apart, which is D-H and not H."""
-    from openquant.explain import D_MINUS_H, formula_ions
+    from milq.explain import D_MINUS_H, formula_ions
 
     ions = formula_ions(CA_D4, "[M+NH4]+")
     kept_three = [ion for ion in ions
@@ -569,7 +569,7 @@ def test_a_dehydration_may_take_a_label_with_it_and_the_rung_says_so():
 
 
 def test_labels_spelt_into_the_formula_are_the_same_labels():
-    from openquant.explain import formula_ions
+    from milq.explain import formula_ions
 
     spelt = {ion.description for ion in formula_ions(CA_D4, "[M+NH4]+")}
     unplaced = {ion.description
@@ -581,7 +581,7 @@ def test_a_formate_adduct_fragments_as_the_deprotonated_molecule():
     """The negative-mode case: formic acid leaves and the pieces are
     [M-H]-, so a lipid infused in formate buffer shows its own ladder
     17 Da below what the channel is written for."""
-    from openquant.explain import formula_ions
+    from milq.explain import formula_ions
 
     ions = formula_ions("C24H40O5", "[M+HCOO]-")
     descriptions = {ion.description for ion in ions}
@@ -602,7 +602,7 @@ def test_a_formate_adduct_fragments_as_the_deprotonated_molecule():
 def test_a_metal_adduct_offers_the_metal_and_the_proton_and_says_which():
     """Sodium is a coordinate bond and stays on whichever piece keeps the
     coordinating site, which arithmetic cannot know. Both are offered."""
-    from openquant.explain import formula_ions
+    from milq.explain import formula_ions
 
     ions = formula_ions("C24H40O5", "[M+Na]+")
     descriptions = {ion.description for ion in ions}
@@ -619,7 +619,7 @@ def test_a_drawing_is_scored_as_the_adduct_it_was_ionised_as(cholic):
     already builds protonated pieces, so a labile adduct adds its own
     intact precursor and nothing else — and that ion is the base peak of
     the EAD infusions."""
-    from openquant.explain import structure_ions
+    from milq.explain import structure_ions
 
     molecule = cholic.molecule()
     plain = structure_ions(molecule, adduct="[M+H]+", max_cuts=1, max_losses=1)
@@ -636,7 +636,7 @@ def test_a_drawing_is_scored_as_the_adduct_it_was_ionised_as(cholic):
 
 
 def test_a_piece_keeps_the_formula_it_is_and_the_precursor_keeps_its_form(cholic):
-    from openquant.explain import structure_ions
+    from milq.explain import structure_ions
 
     ions = structure_ions(cholic.molecule(), adduct="[M+NH4]+", max_cuts=1,
                           max_losses=1)
@@ -650,8 +650,8 @@ def test_a_piece_keeps_the_formula_it_is_and_the_precursor_keeps_its_form(cholic
 # a name of one's own
 # --------------------------------------------------------------------------- #
 def test_a_standard_is_resolved_by_the_name_on_the_bottle():
-    from openquant.explain import resolve_name
-    from openquant.lipidmaps import LipidDatabase
+    from milq.explain import resolve_name
+    from milq.lipidmaps import LipidDatabase
 
     database = LipidDatabase([
         record("LMST04010001", "Cholic acid", "C24H40O5", "LMST04010001",
@@ -667,7 +667,7 @@ def test_a_standard_is_resolved_by_the_name_on_the_bottle():
 def test_a_standard_resolves_without_a_database_too():
     """The table carries the formula for a machine with no LMSD installed;
     what is lost is the drawing, not the answer."""
-    from openquant.explain import resolve_name
+    from milq.explain import resolve_name
 
     resolved = resolve_name("TDCA-d4", database=None, use_installed=False)
 
@@ -676,14 +676,14 @@ def test_a_standard_resolves_without_a_database_too():
 
 
 def test_a_name_nothing_knows_is_not_guessed_at():
-    from openquant.explain import resolve_name
+    from milq.explain import resolve_name
 
     assert resolve_name("frobnicic acid", use_installed=False) is None
     assert resolve_name("", use_installed=False) is None
 
 
 def test_a_lipid_shorthand_name_still_gives_its_formula():
-    from openquant.explain import resolve_name
+    from milq.explain import resolve_name
 
     resolved = resolve_name("SM(d18:1/16:0)", database=None,
                             use_installed=False)
@@ -697,7 +697,7 @@ def test_a_lipid_shorthand_name_still_gives_its_formula():
 def _panel(precursor=None, polarity="Positive", peaks=((430.3465, 1000.0),)):
     from PyQt6 import QtWidgets
 
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     panel = LipidPanel()
@@ -768,7 +768,7 @@ def test_the_panel_lets_the_adduct_be_overridden_by_hand():
 
 
 def test_the_panel_never_offers_a_negative_adduct_to_a_positive_channel():
-    from openquant.chemistry import adducts_matching
+    from milq.chemistry import adducts_matching
 
     app, panel = _panel(precursor=407.28, polarity="Positive")
     signs = {m.name[-1] for m in adducts_matching("C24H40O5", 407.28,
@@ -793,10 +793,10 @@ def test_the_explorer_hands_the_lipid_panel_its_own_survey_scan():
     from PyQt6 import QtWidgets
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.samples import SampleEntry
-    from openquant.session import Session
-    from openquant.ui.explorer import ChannelRef, ExplorerWorkspace
-    from openquant.wiff import ChannelInfo
+    from milq.samples import SampleEntry
+    from milq.session import Session
+    from milq.ui.explorer import ChannelRef, ExplorerWorkspace
+    from milq.wiff import ChannelInfo
 
     mz = np.arange(400.0, 440.0, 0.01)
 
@@ -922,7 +922,7 @@ def test_a_record_at_an_ammonium_precursor_gets_its_core_and_its_ladder():
     the database, so a triacylglycerol annotated [M+NH4]+ is scored with the
     intact ammonium, the [M+H]+ it hands over, and the ladder off *that*.
     """
-    from openquant.explain import structure_ions
+    from milq.explain import structure_ions
 
     molecule = triacetin_record().molecule()
     ions = structure_ions(molecule, adduct="[M+NH4]+", max_cuts=1, max_losses=2)
@@ -941,7 +941,7 @@ def test_a_record_at_an_ammonium_precursor_gets_its_core_and_its_ladder():
 
 
 def test_a_record_at_a_sodium_precursor_offers_both_carriers():
-    from openquant.explain import structure_ions
+    from milq.explain import structure_ions
 
     molecule = triacetin_record().molecule()
     ions = structure_ions(molecule, adduct="[M+Na]+", max_cuts=1, max_losses=2)
@@ -987,7 +987,7 @@ def test_a_non_proton_adduct_has_to_name_the_precursor():
     candidates that explain a spectrum by accident, so an adduct that is not
     the written reading has to fit the mass — see `explain.adduct_gate`.
     """
-    from openquant.explain import adduct_gate
+    from milq.explain import adduct_gate
 
     database = LipidDatabase([triacetin_record()])
     peaks = [(TG_DIACYL, 1000.0)]
@@ -1009,8 +1009,8 @@ def test_the_panel_reads_a_records_adduct_off_the_written_precursor(monkeypatch)
     """
     from PyQt6 import QtWidgets
 
-    from openquant import lipidmaps
-    from openquant.ui.lipid_panel import AUTO_ADDUCT, LipidPanel
+    from milq import lipidmaps
+    from milq.ui.lipid_panel import AUTO_ADDUCT, LipidPanel
 
     database = LipidDatabase([triacetin_record()])
     monkeypatch.setattr(lipidmaps, "database", lambda *a, **k: database)
@@ -1041,8 +1041,8 @@ def test_the_panel_reads_a_records_adduct_off_the_written_precursor(monkeypatch)
 def test_the_mass_search_lists_the_adduct_and_what_it_does(monkeypatch):
     from PyQt6 import QtWidgets
 
-    from openquant import lipidmaps
-    from openquant.ui.lipid_panel import EVERY_ADDUCT, LipidPanel
+    from milq import lipidmaps
+    from milq.ui.lipid_panel import EVERY_ADDUCT, LipidPanel
 
     database = LipidDatabase([triacetin_record()])
     monkeypatch.setattr(lipidmaps, "database", lambda *a, **k: database)

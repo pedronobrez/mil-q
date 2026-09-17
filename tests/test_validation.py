@@ -13,12 +13,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.calibration import CalibrationPoint, fit  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.quantify import PeakResult, ResultsSet  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.validation import (BLANK_TYPES, acquisition_order, carryover,  # noqa: E402
+from milq.calibration import CalibrationPoint, fit  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.quantify import PeakResult, ResultsSet  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.validation import (BLANK_TYPES, acquisition_order, carryover,  # noqa: E402
                                   detection_limits)
 
 
@@ -99,7 +99,7 @@ def test_a_weighted_fit_is_declared():
 
 
 def test_an_unfitted_curve_produces_nothing():
-    from openquant.calibration import Calibration
+    from milq.calibration import Calibration
 
     limits = detection_limits(Calibration(component="A"))
     assert not limits.measurable

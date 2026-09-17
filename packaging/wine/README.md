@@ -29,7 +29,7 @@ up is the long tail of legacy encodings in file dialogs and text import.
 
 Copy the 8 KB result next to `Qt6Core.dll` in the installed application:
 
-    <bottle>/drive_c/users/crossover/AppData/Local/OpenQuant/
+    <bottle>/drive_c/users/crossover/AppData/Local/MIL-Q/
         _internal/PyQt6/Qt6/bin/icuuc.dll
 
 ## Do not ship this in the installer

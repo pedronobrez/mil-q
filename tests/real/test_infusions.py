@@ -8,7 +8,7 @@ the flatness that decides an infusion is one, the spray mask, the noise floor,
 the ladder that recalibrates an axis with no lock mass, the margin against the
 impostors, and the isotopic purity that refuses to be measured.
 
-`openquant/infusion.py` names this folder in its own docstring, so `data.py`
+`milq/infusion.py` names this folder in its own docstring, so `data.py`
 defaults to it and the tests skip themselves when the drive is not mounted.
 """
 
@@ -19,11 +19,11 @@ import os
 import numpy as np
 import pytest
 
-from openquant import api, energy, infusion, infusion_compare, infusion_report
-from openquant import margin as _margin
-from openquant import mzml, purity
-from openquant.processing import centroid_spectrum
-from openquant.raw import open_raw
+from milq import api, energy, infusion, infusion_compare, infusion_report
+from milq import margin as _margin
+from milq import mzml, purity
+from milq.processing import centroid_spectrum
+from milq.raw import open_raw
 
 from . import data
 
@@ -40,7 +40,7 @@ def files():
 @pytest.fixture(scope="module")
 def session(files):
     """A session with all nine open, and a Qt application for what renders."""
-    from openquant.session import Session
+    from milq.session import Session
 
     with api.headless():
         held = Session()
@@ -84,7 +84,7 @@ def _averaged_centroids(entry):
 # --------------------------------------------------------------------------- #
 def test_all_nine_read_as_infusions_and_none_is_marginal(files):
     """
-    `openquant/infusion.py`'s measured table: the nine measure 0.9936 – 1.0000
+    `milq/infusion.py`'s measured table: the nine measure 0.9936 – 1.0000
     on both figures, against `FLAT_FRACTION` of 0.75 — 0.244 of margin.
 
     CLAUDE.md quotes 0.9937 – 1.0000, which is the same nine *without* the

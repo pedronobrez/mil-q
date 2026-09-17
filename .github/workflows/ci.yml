@@ -101,7 +101,7 @@ jobs:
         if: runner.os == 'Linux' && matrix.python == '3.13'
         run: |
           python -m pip install ruff
-          ruff check openquant tests --select F,E9,B019
+          ruff check milq tests --select F,E9,B019
 
       - name: Test
         shell: bash
@@ -168,7 +168,7 @@ jobs:
         run: |
           python -c "
           import platform
-          from openquant import bootstrap
+          from milq import bootstrap
           print('system:', platform.system())
           print('dotnet root:', bootstrap.find_dotnet_root())
           bootstrap.ensure()
@@ -223,13 +223,13 @@ jobs:
           python -m pip install -e . pyinstaller
 
       - name: Build
-        run: python -m PyInstaller packaging/openquant.spec --noconfirm
+        run: python -m PyInstaller packaging/milq.spec --noconfirm
 
       # a layered icon for macOS 26, compiled by Xcode 26's actool; the
       # .icns stays for older systems, and a runner without Xcode 26 says so
       - name: Liquid Glass icon
         if: runner.os == 'macOS'
-        run: bash packaging/make_liquid_icon.sh "$PWD/dist/OpenQuant.app"
+        run: bash packaging/make_liquid_icon.sh "$PWD/dist/MIL-Q.app"
 
       # the bundle either reads a .wiff or it does not, and this is the only
       # way to find out without a person and a mouse
@@ -237,11 +237,11 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "macOS" ]; then
-            QT_QPA_PLATFORM=offscreen dist/OpenQuant.app/Contents/MacOS/OpenQuant --selftest
+            QT_QPA_PLATFORM=offscreen dist/MIL-Q.app/Contents/MacOS/MIL-Q --selftest
           elif [ "$RUNNER_OS" = "Windows" ]; then
-            QT_QPA_PLATFORM=offscreen ./dist/OpenQuant/OpenQuant.exe --selftest
+            QT_QPA_PLATFORM=offscreen ./dist/MIL-Q/MIL-Q.exe --selftest
           else
-            xvfb-run -a ./dist/OpenQuant/OpenQuant --selftest
+            xvfb-run -a ./dist/MIL-Q/MIL-Q --selftest
           fi
 
       - name: Disk image
@@ -253,23 +253,23 @@ jobs:
         shell: pwsh
         run: |
           dotnet tool install --global wix --version 5.0.2
-          $version = (Select-String -Path openquant/__init__.py `
+          $version = (Select-String -Path milq/__init__.py `
             -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
-          wix build packaging/openquant.wxs -d Version=$version `
-            -d BundleDir="$PWD\dist\OpenQuant" `
-            -d IconFile="$PWD\packaging\icons\OpenQuant.ico" `
-            -o "dist/OpenQuant-$version-windows-x64.msi"
+          wix build packaging/milq.wxs -d Version=$version `
+            -d BundleDir="$PWD\dist\MIL-Q" `
+            -d IconFile="$PWD\packaging\icons\MIL-Q.ico" `
+            -o "dist/MIL-Q-$version-windows-x64.msi"
 
       - name: Tarball
         if: runner.os == 'Linux'
         run: |
-          version=$(python -c "import openquant; print(openquant.__version__)")
+          version=$(python -c "import milq; print(milq.__version__)")
           # the launcher entry and its icon travel in the folder; install.sh
           # registers them for the user without touching /usr
-          cp packaging/linux/openquant.desktop packaging/linux/install.sh dist/OpenQuant/
-          cp packaging/icons/OpenQuant.iconset/icon_256x256.png dist/OpenQuant/openquant.png
-          chmod +x dist/OpenQuant/install.sh
-          tar -C dist -czf "dist/OpenQuant-$version-linux-x86_64.tar.gz" OpenQuant
+          cp packaging/linux/milq.desktop packaging/linux/install.sh dist/MIL-Q/
+          cp packaging/icons/MIL-Q.iconset/icon_256x256.png dist/MIL-Q/milq.png
+          chmod +x dist/MIL-Q/install.sh
+          tar -C dist -czf "dist/MIL-Q-$version-linux-x86_64.tar.gz" MIL-Q
 
       # WiX built a 36 KB installer once and called it a success, because a
       # glob that matches nothing is not an error. Every installer here holds
@@ -290,7 +290,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: openquant-${{ runner.os }}
+          name: milq-${{ runner.os }}
           path: |
             dist/*.dmg
             dist/*.msi
@@ -311,6 +311,6 @@ jobs:
           built=(dist/*.dmg dist/*.msi dist/*.tar.gz)
           [ ${#built[@]} -gt 0 ] || { echo "nothing was built" >&2; exit 1; }
           gh release create "${GITHUB_REF_NAME}" --generate-notes --verify-tag \
-            --title "OpenQuant ${GITHUB_REF_NAME}" 2>/dev/null || true
+            --title "MIL-Q ${GITHUB_REF_NAME}" 2>/dev/null || true
           gh release upload "${GITHUB_REF_NAME}" "${built[@]}" --clobber
 

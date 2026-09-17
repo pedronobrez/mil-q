@@ -13,12 +13,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.batches import (BatchSnapshot, compare_batches, read_project,  # noqa: E402
+from milq.batches import (BatchSnapshot, compare_batches, read_project,  # noqa: E402
                                snapshot, write_csv)
-from openquant.components import Component  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.quantify import process  # noqa: E402
-from openquant.samples import UNKNOWN, SampleEntry  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.quantify import process  # noqa: E402
+from milq.samples import UNKNOWN, SampleEntry  # noqa: E402
 from tests.test_matching import Sample  # noqa: E402
 from tests.test_sampling import _Channel  # noqa: E402
 
@@ -93,7 +93,7 @@ def test_a_moved_area_is_marked_and_a_steady_one_is_not():
 def test_a_reference_is_read_from_its_project_without_the_raw_files(tmp_path):
     from PyQt6 import QtWidgets
     QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.session import Session
+    from milq.session import Session
 
     batch = _batch("saved", sigma=0.2)
     session = Session()
@@ -122,7 +122,7 @@ def test_the_csv_carries_every_row(tmp_path):
 def test_the_dialog_shows_the_totals_and_the_rows():
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.ui.batches_dialog import BatchesDialog
+    from milq.ui.batches_dialog import BatchesDialog
 
     comparison = compare_batches(_batch("b", 0.2), _batch("a", 0.04))
     dialog = BatchesDialog(comparison)
@@ -136,8 +136,8 @@ def test_the_dialog_shows_the_totals_and_the_rows():
 def test_the_report_carries_the_comparison_only_while_it_stands():
     from PyQt6 import QtWidgets
     QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant import report
-    from openquant.session import Session
+    from milq import report
+    from milq.session import Session
 
     current, reference = _batch("b", 0.2), _batch("a", 0.04)
     session = Session()

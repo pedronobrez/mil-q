@@ -17,11 +17,11 @@ import time
 
 import pytest
 
-from openquant.chemistry import (ADDUCTS_BY_NAME, NAME_SEARCH_CARBONS,
+from milq.chemistry import (ADDUCTS_BY_NAME, NAME_SEARCH_CARBONS,
                                  NAME_SEARCH_CHAINS, formulas_from_name,
                                  monoisotopic_mass, names_for_mass,
                                  parse_formula, parse_shorthand)
-from openquant.lipidmaps import LipidDatabase, LipidRecord
+from milq.lipidmaps import LipidDatabase, LipidRecord
 
 PROTON = ADDUCTS_BY_NAME["[M+H]+"]
 

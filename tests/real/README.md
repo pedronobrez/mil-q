@@ -11,7 +11,7 @@ They run only when the data is there, and the data is never here.
 ## Running them
 
 ```sh
-OPENQUANT_REAL_DATA=1 QT_QPA_PLATFORM=offscreen python3 -m pytest -q tests/real
+MILQ_REAL_DATA=1 QT_QPA_PLATFORM=offscreen python3 -m pytest -q tests/real
 ```
 
 or, equivalently, by selecting the marker:
@@ -35,15 +35,15 @@ untracked `tests/real/data.local.json`, then a default where there is one.
 
 | set | variable | default |
 |---|---|---|
-| five `260904_EICs_Isabela_*.wiff` — TripleTOF 5600, 81 channels | `OPENQUANT_REAL_EICS` | the working directory (and, from a worktree, the main checkout) |
-| nine ZenoTOF 7600 bile-acid infusions | `OPENQUANT_REAL_INFUSIONS` | `/Volumes/NOBRE/Cyborg/Bileomics` |
-| the 26-injection sphingolipid batch | `OPENQUANT_REAL_BATCH` | none |
-| its project, `.oqproj` | `OPENQUANT_REAL_PROJECT` | none |
-| eight ZenoTOF 7600 DIA runs | `OPENQUANT_REAL_DIA` | none |
-| two Thermo Orbitrap mzML (MTBLS13066) | `OPENQUANT_REAL_ORBITRAP` | none |
+| five `260904_EICs_Isabela_*.wiff` — TripleTOF 5600, 81 channels | `MILQ_REAL_EICS` | the working directory (and, from a worktree, the main checkout) |
+| nine ZenoTOF 7600 bile-acid infusions | `MILQ_REAL_INFUSIONS` | `/Volumes/NOBRE/Cyborg/Bileomics` |
+| the 26-injection sphingolipid batch | `MILQ_REAL_BATCH` | none |
+| its project, `.oqproj` | `MILQ_REAL_PROJECT` | none |
+| eight ZenoTOF 7600 DIA runs | `MILQ_REAL_DIA` | none |
+| two Thermo Orbitrap mzML (MTBLS13066) | `MILQ_REAL_ORBITRAP` | none |
 
 Two of the six have a default because the repository already names them —
-`openquant/infusion.py` tabulates the infusions by path, and the `260904_EICs_*`
+`milq/infusion.py` tabulates the infusions by path, and the `260904_EICs_*`
 files sit in the working directory, ignored by git. **The rest are given no
 default on purpose.** They are other people's unpublished acquisitions, one of
 them named after the person who ran it, and a folder name is not something to

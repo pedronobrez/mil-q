@@ -13,11 +13,11 @@ the trapezoid a 5% spread with the phase of the scans and the fit 0.2%.
 import numpy as np
 import pytest
 
-from openquant import processing as pr
-from openquant.components import Component, IntegrationParams
-from openquant.method import ProcessingMethod
-from openquant.quantify import MANUAL, integrate_component, integrate_manually
-from openquant.samples import SampleEntry
+from milq import processing as pr
+from milq.components import Component, IntegrationParams
+from milq.method import ProcessingMethod
+from milq.quantify import MANUAL, integrate_component, integrate_manually
+from milq.samples import SampleEntry
 from tests.test_matching import Channel, Sample
 
 #: 14.6 s, the cycle of the acquisition this was built for

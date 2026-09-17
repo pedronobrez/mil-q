@@ -9,7 +9,7 @@ what the Explorer does with it: the tree says so, the product-ion channel
 becomes the active one, and the spectrum pane opens on the average of
 every scan, which is then what Explain and the library search read.
 
-The thresholds and the figures behind them are in `openquant/infusion.py`.
+The thresholds and the figures behind them are in `milq/infusion.py`.
 """
 
 import os
@@ -19,14 +19,14 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.infusion import (FLAT_FRACTION, MIN_JUDGED_SCANS,  # noqa: E402
+from milq.infusion import (FLAT_FRACTION, MIN_JUDGED_SCANS,  # noqa: E402
                                 MIN_SCANS, REFERENCE_PERCENTILE,
                                 SETTLING_SECONDS, InfusionVerdict,
                                 above_half_fraction, after_settling,
                                 flat_fraction, is_infusion, run_range,
                                 strongest_channel, verdict_for)
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 MZ = np.linspace(200.0, 800.0, 601)
 
@@ -442,7 +442,7 @@ def test_the_verdict_survives_a_trip_through_mzml(tmp_path):
     channels are inferred from the order of acquisition; the verdict has to
     come out of that as it came out of the file it was written from.
     """
-    from openquant import mzml
+    from milq import mzml
 
     path = tmp_path / "infusion.mzML"
     mzml.write_mzml(infusion_sample(), path)
@@ -462,8 +462,8 @@ def test_the_verdict_survives_a_trip_through_mzml(tmp_path):
 # -- the Explorer ------------------------------------------------------------ #
 def _explorer(sample):
     from PyQt6 import QtWidgets
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     session = Session()
@@ -499,8 +499,8 @@ def test_an_infusion_opens_on_the_average_of_the_whole_run():
     assert len(explorer.chrom.traces) == 2
 
     # and F1 on the marker opens the page that explains the verdict
-    from openquant.manual import manual
-    from openquant.ui.help_window import help_page_for
+    from milq.manual import manual
+    from milq.ui.help_window import help_page_for
     assert help_page_for(explorer.infusion_label) == "direct-infusion"
     assert "direct-infusion" in manual().pages
 
@@ -574,8 +574,8 @@ def test_average_whole_run_says_so_when_there_is_no_channel():
 
 # -- the accurate precursor -------------------------------------------------- #
 def test_the_precursor_of_an_infusion_is_measured_over_the_whole_run():
-    from openquant.components import Component
-    from openquant.precursor import measure
+    from milq.components import Component
+    from milq.precursor import measure
 
     sample = infusion_sample()
     # the survey has to carry the precursor, on a grid fine enough to hold it
@@ -611,7 +611,7 @@ def test_an_mzml_infusion_from_another_vendor_reads_the_same(tmp_path):
     which experiment a scan came from. Read back, it is one product-ion
     channel, and both figures land where a spray lands.
     """
-    from openquant import mzml
+    from milq import mzml
     from tests.test_mzml import (INFUSION_SCANS, _infusion_sample,
                                  _thermo_shaped)
 

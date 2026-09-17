@@ -32,9 +32,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtGui, QtWidgets              # noqa: E402
 
-from openquant import report                            # noqa: E402
-from openquant import spectra_compare as sc             # noqa: E402
-from openquant.ui import export_theme                   # noqa: E402
+from milq import report                            # noqa: E402
+from milq import spectra_compare as sc             # noqa: E402
+from milq.ui import export_theme                   # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -322,9 +322,9 @@ def test_a_stick_gets_a_head_where_a_dash_cannot_show(qapp):
 # the report
 # --------------------------------------------------------------------------- #
 def _session(qapp):
-    from openquant.components import Component
-    from openquant.samples import SampleEntry
-    from openquant.session import Session
+    from milq.components import Component
+    from milq.samples import SampleEntry
+    from milq.session import Session
 
     session = Session()
     session.entries = [
@@ -451,7 +451,7 @@ def test_a_black_and_white_report_draws_its_pictures_in_black_and_white(qapp):
 # the choice, and where it is kept
 # --------------------------------------------------------------------------- #
 def test_the_theme_chosen_for_an_export_is_remembered(qapp):
-    from openquant.ui.settings import settings
+    from milq.ui.settings import settings
 
     store = settings()
     try:
@@ -472,7 +472,7 @@ def test_the_theme_chosen_for_an_export_is_remembered(qapp):
 
 
 def test_the_chooser_offers_what_the_dialog_allows(qapp):
-    from openquant.ui.settings import settings
+    from milq.ui.settings import settings
 
     store = settings()
     try:

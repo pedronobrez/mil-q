@@ -2,11 +2,11 @@
 
 import pytest
 
-from openquant.components import AcceptanceLimits, Component
-from openquant.method import ProcessingMethod
-from openquant.quantify import PeakResult, ResultsSet, evaluate_acceptance
-from openquant.samples import QC, STANDARD, UNKNOWN, SampleEntry
-from openquant.statistics import (
+from milq.components import AcceptanceLimits, Component
+from milq.method import ProcessingMethod
+from milq.quantify import PeakResult, ResultsSet, evaluate_acceptance
+from milq.samples import QC, STANDARD, UNKNOWN, SampleEntry
+from milq.statistics import (
     GROUP_BY_CONCENTRATION,
     GROUP_BY_SAMPLE_TYPE,
     summarise,

@@ -26,12 +26,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import labels as label_rule  # noqa: E402
-from openquant import session as session_module  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.spectra_compare import SpectrumRecipe  # noqa: E402
-from openquant.ui.explorer import ExplorerWorkspace  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq import labels as label_rule  # noqa: E402
+from milq import session as session_module  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.spectra_compare import SpectrumRecipe  # noqa: E402
+from milq.ui.explorer import ExplorerWorkspace  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 N_SCANS = 24
 

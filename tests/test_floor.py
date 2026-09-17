@@ -15,12 +15,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.components import Component, load_components, save_components  # noqa: E402
-from openquant.health import WARNING, check_method  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.qc import MIN_SNR, batch_qc, control_chart  # noqa: E402
-from openquant.quantify import PeakResult, ResultsSet, evaluate_acceptance  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
+from milq.components import Component, load_components, save_components  # noqa: E402
+from milq.health import WARNING, check_method  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.qc import MIN_SNR, batch_qc, control_chart  # noqa: E402
+from milq.quantify import PeakResult, ResultsSet, evaluate_acceptance  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
 
 
 def _entries(n=8):
@@ -140,8 +140,8 @@ def test_the_floor_travels_through_the_csv_and_the_project(tmp_path):
 def test_the_method_table_edits_the_floor():
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.session import Session
-    from openquant.ui.method_workspace import COL, MethodWorkspace
+    from milq.session import Session
+    from milq.ui.method_workspace import COL, MethodWorkspace
 
     session = Session()
     session.method = _method(None)
@@ -159,7 +159,7 @@ def test_the_method_table_edits_the_floor():
 # proposing a floor from the batch
 # --------------------------------------------------------------------------- #
 def test_a_floor_is_proposed_from_the_median_with_the_failures_left_out():
-    from openquant.qc import FLOOR_FRACTION, suggest_floors
+    from milq.qc import FLOOR_FRACTION, suggest_floors
 
     entries = _entries(10)
     areas = [1000.0, 1040.0, 960.0, 1010.0, 990.0, 1020.0, 80.0, 1000.0, 1030.0, 970.0]
@@ -189,7 +189,7 @@ def test_a_floor_is_proposed_from_the_median_with_the_failures_left_out():
 
 
 def test_a_proposal_says_when_too_few_injections_stand_behind_it():
-    from openquant.qc import suggest_floors
+    from milq.qc import suggest_floors
 
     entries = _entries(3)
     results = _results(entries, [500.0, 520.0, 480.0])
@@ -203,9 +203,9 @@ def test_a_proposal_says_when_too_few_injections_stand_behind_it():
 def test_the_dialog_writes_only_the_ticked_floors():
     from PyQt6 import QtCore, QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.qc import suggest_floors
-    from openquant.session import Session
-    from openquant.ui.floor_dialog import FloorDialog
+    from milq.qc import suggest_floors
+    from milq.session import Session
+    from milq.ui.floor_dialog import FloorDialog
 
     entries = _entries(8)
     session = Session()

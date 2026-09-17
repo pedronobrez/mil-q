@@ -23,10 +23,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import infusion as infusion_rules  # noqa: E402
-from openquant.infusion import after_settling, run_range  # noqa: E402
-from openquant.ui.contour_view import PLAY_RATE  # noqa: E402
-from openquant.ui.explorer import (VIEW_CHROMATOGRAM, VIEW_CONTOUR,  # noqa: E402
+from milq import infusion as infusion_rules  # noqa: E402
+from milq.infusion import after_settling, run_range  # noqa: E402
+from milq.ui.contour_view import PLAY_RATE  # noqa: E402
+from milq.ui.explorer import (VIEW_CHROMATOGRAM, VIEW_CONTOUR,  # noqa: E402
                                    excluded_scans)
 from tests.test_infusion import (FakeChannel, FakeSample, MZ, _explorer,  # noqa: E402
                                  _peak, gradient_sample, infusion_sample)
@@ -302,7 +302,7 @@ def test_the_delta_is_offered_on_an_infusion_and_nowhere_else(qapp=None):
     # difference against the average of a gradient on screen
     explorer.session.entries.clear()
     explorer.clear_views()
-    from openquant.samples import SampleEntry
+    from milq.samples import SampleEntry
     explorer.session.entries.append(
         SampleEntry("/d/grad.wiff", 0, "grad", sample=gradient_sample()))
     explorer.rebuild_tree()

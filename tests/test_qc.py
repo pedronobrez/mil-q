@@ -14,11 +14,11 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import qc  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.quantify import PeakResult, ResultsSet  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
+from milq import qc  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.quantify import PeakResult, ResultsSet  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
 
 
 class _Sample:

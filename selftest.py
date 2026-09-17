@@ -12,7 +12,7 @@ import glob
 import sys
 import time
 
-from openquant import WiffFile
+from milq import WiffFile
 
 
 def report(path: str) -> None:

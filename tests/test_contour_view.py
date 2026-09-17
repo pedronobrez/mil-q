@@ -16,8 +16,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant.contour import build_contour  # noqa: E402
-from openquant.ui.contour_view import LINEAR, LOG, SQRT, ContourView  # noqa: E402
+from milq.contour import build_contour  # noqa: E402
+from milq.ui.contour_view import LINEAR, LOG, SQRT, ContourView  # noqa: E402
 from tests.test_contour import _Channel  # noqa: E402
 
 
@@ -87,7 +87,7 @@ def test_the_top_of_the_scale_is_not_the_maximum(qapp):
 
 
 def test_an_empty_contour_says_so_rather_than_drawing_nothing(qapp):
-    from openquant.contour import Contour
+    from milq.contour import Contour
 
     view = ContourView()
     view.set_contour(Contour(note="the channel has no scans"))

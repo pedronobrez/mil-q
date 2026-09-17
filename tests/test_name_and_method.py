@@ -29,11 +29,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import infusion_report as ir  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.library import LibraryEntry, SpectralLibrary  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.library import LibraryEntry, SpectralLibrary  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 #: cholic acid-d4 as `[M+NH4]+`, which is what the real files' 430.34 and
 #: 430.35 both are — the method carries two decimals and does not always
@@ -272,7 +272,7 @@ def test_a_name_that_is_merely_a_substring_of_a_lipid_is_refused(name):
     Skipped where LIPID MAPS is not installed: with no database none of them
     resolves at all and the test would pass for the wrong reason.
     """
-    from openquant import lipidmaps
+    from milq import lipidmaps
 
     if not lipidmaps.is_installed():
         pytest.skip("LIPID MAPS is not installed on this machine")
@@ -309,7 +309,7 @@ def test_polarity_gates_the_adducts_offered():
 # the row and the report
 # --------------------------------------------------------------------------- #
 def _summary(entries, components=(), library=None):
-    from openquant.session import Session
+    from milq.session import Session
 
     session = Session()
     session.entries.extend(entries)
@@ -415,7 +415,7 @@ def test_the_shell_warns_once_per_file_without_a_dialog(qapp, monkeypatch):
     read off `file_warnings` and the dialog is left to the one line that
     puts it up.
     """
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     try:

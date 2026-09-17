@@ -20,15 +20,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets  # noqa: E402
 
-from openquant import audit, report  # noqa: E402
-from openquant.audit import AuditEntry, AuditTrail  # noqa: E402
-from openquant.calibration import Calibration, CalibrationPoint  # noqa: E402
-from openquant.calibration import fit as fit_curve  # noqa: E402
-from openquant.components import Component, IntegrationParams  # noqa: E402
-from openquant.quantify import PeakResult, ResultsSet  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.ui import style  # noqa: E402
+from milq import audit, report  # noqa: E402
+from milq.audit import AuditEntry, AuditTrail  # noqa: E402
+from milq.calibration import Calibration, CalibrationPoint  # noqa: E402
+from milq.calibration import fit as fit_curve  # noqa: E402
+from milq.components import Component, IntegrationParams  # noqa: E402
+from milq.quantify import PeakResult, ResultsSet  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.ui import style  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -232,7 +232,7 @@ def session(qapp):
 
 @pytest.fixture
 def analytics(session):
-    from openquant.ui.analytics import AnalyticsWorkspace
+    from milq.ui.analytics import AnalyticsWorkspace
 
     widget = AnalyticsWorkspace(session)
     widget.resize(1200, 800)
@@ -241,7 +241,7 @@ def analytics(session):
 
 
 def select(workspace, name):
-    from openquant.ui.analytics import ROLE_NAME
+    from milq.ui.analytics import ROLE_NAME
 
     it = QtWidgets.QTreeWidgetItemIterator(workspace.component_tree)
     while it.value():
@@ -288,7 +288,7 @@ def test_putting_a_row_back_on_the_detector_is_recorded_too(analytics):
 
 
 def test_excluding_a_row_from_the_results_table_is_one_entry(analytics):
-    from openquant.ui.results_table import USED_COLUMN
+    from milq.ui.results_table import USED_COLUMN
 
     session = analytics.session
     analytics.process_batch()
@@ -369,7 +369,7 @@ def test_choosing_an_internal_standard_in_the_table_is_a_method_edit(analytics):
 # -- the method workspace ---------------------------------------------------- #
 @pytest.fixture
 def method_workspace(session):
-    from openquant.ui.method_workspace import MethodWorkspace
+    from milq.ui.method_workspace import MethodWorkspace
 
     widget = MethodWorkspace(session)
     yield widget
@@ -378,7 +378,7 @@ def method_workspace(session):
 
 def test_editing_a_cell_records_the_column_and_the_two_values(
         method_workspace):
-    from openquant.ui.method_workspace import COL
+    from milq.ui.method_workspace import COL
 
     session = method_workspace.session
     method_workspace.table.item(0, COL["RT"]).setText("6.25")
@@ -398,7 +398,7 @@ def test_a_row_removed_from_the_table_is_recorded(method_workspace):
 
 
 def test_a_row_added_and_named_is_recorded_as_an_addition(method_workspace):
-    from openquant.ui.method_workspace import COL
+    from milq.ui.method_workspace import COL
 
     session = method_workspace.session
     method_workspace._add_row()
@@ -424,7 +424,7 @@ def test_a_default_under_the_table_is_recorded_when_the_typing_stops(
 # -- the samples workspace ---------------------------------------------------- #
 @pytest.fixture
 def samples_workspace(session):
-    from openquant.ui.samples_workspace import SamplesWorkspace
+    from milq.ui.samples_workspace import SamplesWorkspace
 
     # the batch table reads a sample's metadata; the stub channels here have
     # none, and none of what this workspace edits comes off the file anyway
@@ -437,7 +437,7 @@ def samples_workspace(session):
 
 def test_a_sample_type_group_and_number_are_each_recorded_once(
         samples_workspace):
-    from openquant.ui.samples_workspace import COL
+    from milq.ui.samples_workspace import COL
 
     session = samples_workspace.session
     samples_workspace.table.cellWidget(0, COL["Type"]).setCurrentText("Blank")
@@ -461,7 +461,7 @@ def test_a_sample_type_group_and_number_are_each_recorded_once(
 
 
 def test_retyping_a_value_as_it_already_was_records_nothing(samples_workspace):
-    from openquant.ui.samples_workspace import COL
+    from milq.ui.samples_workspace import COL
 
     session = samples_workspace.session
     samples_workspace.table.item(0, COL["Dilution"]).setText("1")
@@ -487,7 +487,7 @@ def test_a_concentration_copied_down_records_the_rows_it_filled(
 # --------------------------------------------------------------------------- #
 @pytest.fixture
 def panel(session):
-    from openquant.ui.audit_panel import AuditPanel
+    from milq.ui.audit_panel import AuditPanel
 
     session.record(audit.MANUAL_INTEGRATION, "Cer A · S0", "not integrated",
                    "4.2–5.8 min, area 900", when="2026-09-10T09:00:00")
@@ -542,21 +542,21 @@ def test_the_export_writes_the_whole_trail_and_not_the_filtered_view(
 
 
 def test_the_panel_names_its_manual_page(panel):
-    from openquant.ui.help_window import help_page_for
+    from milq.ui.help_window import help_page_for
 
     assert help_page_for(panel) == "audit-trail"
     assert help_page_for(panel.table) == "audit-trail"
 
 
 def test_the_shell_opens_it_from_the_file_menu(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     shell.session.record(audit.PROJECT_SAVED, "batch.oqproj")
     shell.show_audit()
     dialog = shell._audit_dialog
     assert dialog.panel.table.rowCount() == 1
-    from openquant.ui.help_window import help_page_for
+    from milq.ui.help_window import help_page_for
     assert help_page_for(dialog) == "audit-trail"
     dialog.close()
     shell.close()

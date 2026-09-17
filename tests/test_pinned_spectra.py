@@ -13,9 +13,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtGui, QtWidgets  # noqa: E402
 
-from openquant.session import Session  # noqa: E402
-from openquant.ui.explorer import ExplorerWorkspace  # noqa: E402
-from openquant.ui.plots import Trace  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.ui.explorer import ExplorerWorkspace  # noqa: E402
+from milq.ui.plots import Trace  # noqa: E402
 
 
 def test_pinning_keeps_the_live_spectrum_first_and_the_pins_after():
@@ -107,7 +107,7 @@ def test_the_comparison_carries_the_two_switches():
 
 def test_the_comparison_is_exported_as_a_picture(tmp_path):
     """PNG at twice the size for print, SVG for a figure to be resized."""
-    from openquant.spectra_compare import DEFAULT_HEIGHT, DEFAULT_WIDTH, PRINT_SCALE
+    from milq.spectra_compare import DEFAULT_HEIGHT, DEFAULT_WIDTH, PRINT_SCALE
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     explorer, _mz = _explorer(app)

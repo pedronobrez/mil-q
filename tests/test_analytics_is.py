@@ -8,10 +8,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets
 
-from openquant.components import Component
-from openquant.quantify import PeakResult, ResultsSet
-from openquant.session import Session
-from openquant.ui.analytics import AnalyticsWorkspace
+from milq.components import Component
+from milq.quantify import PeakResult, ResultsSet
+from milq.session import Session
+from milq.ui.analytics import AnalyticsWorkspace
 
 
 @pytest.fixture(scope="module")
@@ -66,7 +66,7 @@ def test_clearing_the_standard_falls_back_to_the_raw_area(qapp, workspace):
 
 
 def test_the_table_hands_the_choice_to_the_workspace(qapp, workspace):
-    from openquant.ui.results_table import IS_COLUMN
+    from milq.ui.results_table import IS_COLUMN
     model = workspace.results.model
     row = next(r for r in range(model.rowCount())
                if model.result_at(r).component == "C16:0-Ceramide")

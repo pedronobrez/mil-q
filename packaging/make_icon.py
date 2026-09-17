@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Draws OpenQuant's application icon with the suite's shared generator.
+"""Draws MIL-Q's application icon with the suite's shared generator.
 
-OpenQuant and OpenDIAL share one mark — the rounded square, the blue gradient, the white
-chromatographic peak on a baseline — and differ in what stands behind the peak. OpenQuant's is the
+MIL-Q and OpenDIAL share one mark — the rounded square, the blue gradient, the white
+chromatographic peak on a baseline — and differ in what stands behind the peak. MIL-Q's is the
 *targeted* variant: one co-eluting peak showing through the front one, the deconvolution of a
 known analyte. The drawing lives in OpenDIAL's repository (`tools/make_icon.py`), so the two
 applications cannot drift apart; this script finds it and asks for the targeted mark.
 
-    python3 packaging/make_icon.py            # -> packaging/icons/OpenQuant.{icns,ico,svg} and png/
+    python3 packaging/make_icon.py            # -> packaging/icons/MIL-Q.{icns,ico,svg} and png/
 
 The generator is looked for at $OPENDIAL_ROOT/tools/make_icon.py, then beside this repository
 (../OpenDIAL/opendial). The files it writes are committed, so a build does not need OpenDIAL
@@ -41,7 +41,7 @@ def main() -> None:
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    module.export(str(OUT), "targeted", "OpenQuant")
+    module.export(str(OUT), "targeted", "MIL-Q")
     print(f"[icon] drawn by {path}")
 
 

@@ -1,8 +1,8 @@
 """
-The per-region label budget: `openquant.labels`, and the two things that use
+The per-region label budget: `milq.labels`, and the two things that use
 it — the spectrum pane and the printed comparison.
 
-The rule these test is the one written down in `openquant/labels.py`: the
+The rule these test is the one written down in `milq/labels.py`: the
 visible mass axis is cut into equal windows, each may claim a few labels
 tallest first, and the tallest peak of every window asks for room before any
 window asks for a second. What is checked here is the arithmetic, on spectra
@@ -19,10 +19,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets
 
-from openquant import labels as label_rule
-from openquant import spectra_compare as sc
-from openquant.ui.plots import SpectrumView, Trace
-from openquant.ui import plots
+from milq import labels as label_rule
+from milq import spectra_compare as sc
+from milq.ui.plots import SpectrumView, Trace
+from milq.ui import plots
 
 
 @pytest.fixture(autouse=True)

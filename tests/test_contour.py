@@ -11,7 +11,7 @@ mass it actually had.
 import numpy as np
 import pytest
 
-from openquant.contour import DEFAULT_BINS, Contour, build_contour
+from milq.contour import DEFAULT_BINS, Contour, build_contour
 
 
 class _Info:

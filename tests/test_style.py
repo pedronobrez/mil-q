@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtGui, QtWidgets
 
-from openquant.ui import style, theme
+from milq.ui import style, theme
 
 
 @pytest.fixture(scope="module")
@@ -121,18 +121,18 @@ def test_a_cell_widget_is_given_the_padding_it_loses(light, qapp):
 
 
 def test_the_first_series_is_the_project_blue(light):
-    from openquant.ui.plots import colour
+    from milq.ui.plots import colour
     assert colour(0) == style.LIGHT["accent"]
     assert colour(1) != colour(0)
 
 
 def test_the_series_colour_follows_the_theme(dark):
-    from openquant.ui.plots import colour
+    from milq.ui.plots import colour
     assert colour(0) == style.DARK["accent"]
 
 
 def test_every_series_after_the_first_stays_distinct(light):
-    from openquant.ui.plots import PALETTE, colour
+    from milq.ui.plots import PALETTE, colour
     seen = [colour(i) for i in range(len(PALETTE) + 1)]
     assert len(set(seen)) == len(seen)
 
@@ -153,7 +153,7 @@ def test_a_layout_saved_before_the_toolbars_moved_is_discarded(light, qapp):
     so without a version bump an old saved state puts all three toolbars back
     on one row — where Processing collapses to a fifth of the width it needs.
     """
-    from openquant.ui.explorer import LAYOUT_VERSION
+    from milq.ui.explorer import LAYOUT_VERSION
 
     window = QtWidgets.QMainWindow()
     bar = window.addToolBar("Only")
@@ -164,8 +164,8 @@ def test_a_layout_saved_before_the_toolbars_moved_is_discarded(light, qapp):
 
 
 def test_the_processing_toolbar_gets_a_row_of_its_own(light, qapp):
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     workspace.resize(1500, 700)

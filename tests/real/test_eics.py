@@ -22,13 +22,13 @@ import sys
 import numpy as np
 import pytest
 
-from openquant import infusion, mzml, processing
-from openquant.raw import open_raw
+from milq import infusion, mzml, processing
+from milq.raw import open_raw
 
 from . import data
 
 #: The digest of the five files as this build reads them, sha256 over every
-#: line but the `# openquant <version> digest` header — which carries the
+#: line but the `# milq <version> digest` header — which carries the
 #: version and would change on every release without anything having been
 #: read differently.
 #:
@@ -46,7 +46,7 @@ def files():
 @pytest.fixture(scope="module")
 def digest(files):
     """`--digest` over all five, run the way a release is checked."""
-    result = subprocess.run([sys.executable, "-m", "openquant.app", "--digest",
+    result = subprocess.run([sys.executable, "-m", "milq.app", "--digest",
                              *files], capture_output=True, text=True, check=True)
     return result.stdout.splitlines()
 
@@ -256,10 +256,10 @@ def test_one_component_quantified_from_both_formats(pair):
     the retention time and the width are identical, the area from mzML is the
     lower of the two, and the difference sits inside the 12% envelope above.
     """
-    from openquant.components import Component
-    from openquant.method import ProcessingMethod
-    from openquant.quantify import integrate_component
-    from openquant.samples import SampleEntry
+    from milq.components import Component
+    from milq.method import ProcessingMethod
+    from milq.quantify import integrate_component
+    from milq.samples import SampleEntry
 
     sample, from_mzml, _ = pair
     channel = sample.channels[20]
@@ -352,7 +352,7 @@ def test_a_centroid_across_the_gaps_moves_the_label(files):
 # --------------------------------------------------------------------------- #
 def test_none_of_the_five_reads_as_an_infusion(files):
     """
-    `openquant/infusion.py`'s measured table: the five `260904_EICs_Isabela_*`
+    `milq/infusion.py`'s measured table: the five `260904_EICs_Isabela_*`
     runs measure 0.019 – 0.057 on the sample total and 0.030 – 0.097 on their
     strongest channel, against `FLAT_FRACTION` of 0.75. 39 chromatographic
     runs and 9 infusions, 48 of 48, and these are five of the 39.

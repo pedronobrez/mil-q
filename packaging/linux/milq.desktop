@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MIL-Q
+Comment=Review and quantitation for LC-MS data (.wiff, .mzML)
+Exec=INSTALLDIR/MIL-Q %F
+Icon=milq
+Terminal=false
+Categories=Science;Chemistry;
+MimeType=application/x-wiff;application/x-mzml;
+StartupWMClass=MIL-Q

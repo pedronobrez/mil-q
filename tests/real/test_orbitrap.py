@@ -9,7 +9,7 @@ keeping them: everything above `raw.py` is supposed not to know.
 
 They were downloaded into a scratch directory to answer one question and were
 never put anywhere permanent, so these tests skip themselves more often than
-they run. `OPENQUANT_REAL_ORBITRAP` points at the folder.
+they run. `MILQ_REAL_ORBITRAP` points at the folder.
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from openquant import infusion
-from openquant.raw import open_raw
+from milq import infusion
+from milq.raw import open_raw
 
 from . import data
 

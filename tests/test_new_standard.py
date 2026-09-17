@@ -23,12 +23,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import audit  # noqa: E402
-from openquant import standard_history as sh  # noqa: E402
-from openquant.library import load_library, provenance_of  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.ui.new_standard_dialog import NewStandardDialog  # noqa: E402
+from milq import audit  # noqa: E402
+from milq import standard_history as sh  # noqa: E402
+from milq.library import load_library, provenance_of  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.ui.new_standard_dialog import NewStandardDialog  # noqa: E402
 from tests.test_infusion_report import (ADDUCT, FORMULA,  # noqa: E402
                                         FakeChannel, FakeSample, _entry,
                                         _grid, _ions)
@@ -94,7 +94,7 @@ def test_the_name_is_resolved_as_it_is_typed(qapp):
     assert "4 unplaced label" in said
     # the LIPID MAPS identifier only where the database is installed: a
     # machine without it still resolves the name, from the standards table
-    from openquant.lipidmaps import database
+    from milq.lipidmaps import database
 
     if database() is not None:
         assert "LMST04010001" in said
@@ -361,8 +361,8 @@ def test_nothing_is_written_before_create_is_pressed(qapp, tmp_path):
 # where it is offered from
 # --------------------------------------------------------------------------- #
 def test_the_dialog_names_a_manual_page_that_exists(qapp):
-    from openquant.manual import manual
-    from openquant.ui.help_window import help_page_for
+    from milq.manual import manual
+    from milq.ui.help_window import help_page_for
 
     dialog = _dialog(_session())
 
@@ -372,7 +372,7 @@ def test_the_dialog_names_a_manual_page_that_exists(qapp):
 
 def test_the_infusions_tab_offers_it_without_a_measure(qapp):
     """Entering a standard reads one file; the summary is a table of many."""
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.ui.infusions_panel import InfusionsPanel
 
     panel = InfusionsPanel(_session())
 
@@ -381,7 +381,7 @@ def test_the_infusions_tab_offers_it_without_a_measure(qapp):
 
 
 def test_the_file_menu_offers_it_and_the_shell_refreshes_what_it_wrote(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     try:
@@ -401,8 +401,8 @@ def test_a_typed_formula_beats_whatever_the_name_resolves_to(
     without it the same file was refused for having no formula at all —
     the CI failure that found this. A typed formula is a decision.
     """
-    from openquant import explain
-    from openquant.explain import NamedCompound
+    from milq import explain
+    from milq.explain import NamedCompound
 
     def elsewhere(written):
         return NamedCompound(written=written, compound="testolactone",

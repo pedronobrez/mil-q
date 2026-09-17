@@ -2,7 +2,7 @@
 
 import pytest
 
-from openquant.components import Component, load_components, save_components
+from milq.components import Component, load_components, save_components
 
 
 def test_roundtrip_csv(tmp_path):

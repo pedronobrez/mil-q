@@ -24,8 +24,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets  # noqa: E402
 
-from openquant.ui.flow_layout import FlowLayout  # noqa: E402
-from openquant.ui.shell import MainShell  # noqa: E402
+from milq.ui.flow_layout import FlowLayout  # noqa: E402
+from milq.ui.shell import MainShell  # noqa: E402
 
 
 @pytest.fixture(scope="module")

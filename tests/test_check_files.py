@@ -14,7 +14,7 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.folder import (ABSENT, DUPLICATE, IGNORED,  # noqa: E402
+from milq.folder import (ABSENT, DUPLICATE, IGNORED,  # noqa: E402
                               MISSING_SCAN, STRAY_SCAN, UNREADABLE,
                               UNSUPPORTED, apply_rename, check_files,
                               guess_owner)
@@ -293,7 +293,7 @@ def qapp():
 
 
 def test_the_dialog_shows_every_finding_with_its_action(qapp, acquisitions):
-    from openquant.ui.folder_dialog import MARK, FolderDialog
+    from milq.ui.folder_dialog import MARK, FolderDialog
 
     report = check_files([acquisitions])
     dialog = FolderDialog(report)
@@ -311,7 +311,7 @@ def test_the_dialog_shows_every_finding_with_its_action(qapp, acquisitions):
 
 def test_the_dialog_renames_the_selected_stray_and_checks_again(qapp,
                                                                 acquisitions):
-    from openquant.ui.folder_dialog import FolderDialog
+    from milq.ui.folder_dialog import FolderDialog
 
     report = check_files([acquisitions])
     dialog = FolderDialog(report)
@@ -333,7 +333,7 @@ def test_the_dialog_will_not_rename_over_a_file_that_is_there(qapp,
                                                               monkeypatch):
     from PyQt6 import QtWidgets
 
-    from openquant.ui.folder_dialog import FolderDialog
+    from milq.ui.folder_dialog import FolderDialog
 
     report = check_files([acquisitions])
     dialog = FolderDialog(report)
@@ -349,7 +349,7 @@ def test_the_dialog_will_not_rename_over_a_file_that_is_there(qapp,
 
 
 def test_a_row_with_no_rename_leaves_the_button_disabled(qapp, acquisitions):
-    from openquant.ui.folder_dialog import FolderDialog
+    from milq.ui.folder_dialog import FolderDialog
 
     report = check_files([acquisitions])
     dialog = FolderDialog(report)
@@ -362,9 +362,9 @@ def test_a_row_with_no_rename_leaves_the_button_disabled(qapp, acquisitions):
 def test_the_dialog_names_its_manual_page_and_offers_help(qapp, acquisitions):
     from PyQt6 import QtWidgets
 
-    from openquant.manual import manual
-    from openquant.ui.folder_dialog import HELP_PAGE, FolderDialog
-    from openquant.ui.help_window import help_page_for
+    from milq.manual import manual
+    from milq.ui.folder_dialog import HELP_PAGE, FolderDialog
+    from milq.ui.help_window import help_page_for
 
     dialog = FolderDialog(check_files([acquisitions]))
     assert help_page_for(dialog) == HELP_PAGE
@@ -379,7 +379,7 @@ def test_the_dialog_names_its_manual_page_and_offers_help(qapp, acquisitions):
 # --------------------------------------------------------------------------- #
 def test_the_shell_opens_a_clean_folder_without_a_dialog(qapp, tmp_path,
                                                          monkeypatch):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     write(tmp_path, "a.mzML", "b.mzML")
     shell = MainShell()
@@ -392,7 +392,7 @@ def test_the_shell_opens_a_clean_folder_without_a_dialog(qapp, tmp_path,
 
 
 def test_the_shell_has_a_menu_entry_for_the_check(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     assert shell.act_check_folder.text() == "Check a folder…"

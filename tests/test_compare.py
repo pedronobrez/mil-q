@@ -15,12 +15,12 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import processing as pr  # noqa: E402
-from openquant.compare import (SENSITIVE_PERCENT, adopt_algorithm,  # noqa: E402
+from milq import processing as pr  # noqa: E402
+from milq.compare import (SENSITIVE_PERCENT, adopt_algorithm,  # noqa: E402
                                compare_algorithms, with_algorithm)
-from openquant.components import Component, IntegrationParams  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.samples import QC, UNKNOWN, SampleEntry  # noqa: E402
+from milq.components import Component, IntegrationParams  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.samples import QC, UNKNOWN, SampleEntry  # noqa: E402
 from tests.test_matching import Channel, Sample  # noqa: E402
 
 STEP = 14.6 / 60.0
@@ -201,7 +201,7 @@ def test_adopting_changes_the_defaults_and_every_override_in_place():
 
 
 def test_sensitivity_is_judged_on_the_median_not_on_one_row():
-    from openquant.compare import Delta
+    from milq.compare import Delta
     assert Delta("x", both=3, median_percent=SENSITIVE_PERCENT + 1).sensitive
     assert not Delta("x", both=3, median_percent=SENSITIVE_PERCENT - 1,
                      max_percent=300.0).sensitive
@@ -214,7 +214,7 @@ def test_sensitivity_is_judged_on_the_median_not_on_one_row():
 @pytest.fixture
 def session_with_comparison():
     from PyQt6 import QtWidgets
-    from openquant.session import Session
+    from milq.session import Session
     global _app   # held, or it is collected before the dialog is built
     _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     session = Session()
@@ -226,7 +226,7 @@ def session_with_comparison():
 
 
 def test_the_dialog_lists_every_component_and_draws_every_algorithm(session_with_comparison):
-    from openquant.ui.compare_dialog import ComparisonDialog
+    from milq.ui.compare_dialog import ComparisonDialog
     session = session_with_comparison
     dialog = ComparisonDialog(session, session.comparison)
     assert dialog.components.rowCount() == 2
@@ -243,7 +243,7 @@ def test_the_dialog_lists_every_component_and_draws_every_algorithm(session_with
 
 
 def test_the_report_carries_the_section_only_when_a_comparison_was_run(session_with_comparison):
-    from openquant import report
+    from milq import report
     session = session_with_comparison
     document = report.build_html(session, sections=("summary", "algorithms"))
     assert "Integration algorithms" in document
@@ -260,7 +260,7 @@ def test_the_indexed_lookups_report_what_the_walks_reported():
     set, once per row, once per component, once per algorithm. What the
     comparison says has to be exactly what it said.
     """
-    from openquant import compare as cm
+    from milq import compare as cm
 
     entries, method = _entries(), _method()
     comparison = compare_algorithms(entries, method)
@@ -296,7 +296,7 @@ def test_the_indexed_lookups_report_what_the_walks_reported():
 
 def test_a_component_missing_from_one_run_is_still_compared():
     """`.get(name, [])`: an absent key must read as no rows, not as a crash."""
-    from openquant import compare as cm
+    from milq import compare as cm
 
     delta = cm._delta("summation", [], {}, _method().components[0])
     assert delta.both == 0 and delta.median_percent is None

@@ -24,11 +24,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import audit  # noqa: E402
-from openquant import infusion_batch as batch  # noqa: E402
-from openquant import infusion_cover as cover  # noqa: E402
-from openquant import infusion_report as ir  # noqa: E402
-from openquant.folder import Finding  # noqa: E402
+from milq import audit  # noqa: E402
+from milq import infusion_batch as batch  # noqa: E402
+from milq import infusion_cover as cover  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
+from milq.folder import Finding  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -132,14 +132,14 @@ def _real_folder():
 # what this is
 # --------------------------------------------------------------------------- #
 def test_the_cover_names_the_folder_the_day_and_the_version(qapp):
-    from openquant import __version__
+    from milq import __version__
 
     summary = _real_folder()
     html = cover.build_html(_result(summary), summary)
 
     assert cover.title_for(_result(summary)) == "Bileomics"
     assert "<h1>Bileomics</h1>" in html
-    assert f"OpenQuant {__version__}" in html
+    assert f"MIL-Q {__version__}" in html
     assert "/Volumes/DISK/Bileomics" in html
     # the counts, and the summary line the tab shows to the digit
     assert "7 in 2 compound(s)" in html
@@ -411,7 +411,7 @@ def test_a_cover_with_no_pages_behind_it_lists_none(qapp):
 # --------------------------------------------------------------------------- #
 def _reports(qapp):
     """Two real reports, built the way the tab and the run build them."""
-    from openquant.session import Session
+    from milq.session import Session
     from tests.test_infusion_report import _entry
 
     session = Session()
@@ -492,13 +492,13 @@ def _pdf_text(path: str, page: int = 0) -> str:
 
 
 def _panel(session):
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.ui.infusions_panel import InfusionsPanel
 
     return InfusionsPanel(session)
 
 
 def _measured(qapp):
-    from openquant.session import Session
+    from milq.session import Session
     from tests.test_infusion_report import _entry
 
     session = Session()
@@ -544,7 +544,7 @@ def test_the_tab_says_what_it_passed_over_rather_than_nothing(qapp):
     """An open sample that is not an infusion is not a row, and the cover
     written from the tab has to say that as plainly as the command line
     does."""
-    from openquant.samples import SampleEntry
+    from milq.samples import SampleEntry
     from tests.test_infusion import gradient_sample
 
     session, panel = _measured(qapp)

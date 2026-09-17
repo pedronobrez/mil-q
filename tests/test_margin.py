@@ -9,12 +9,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from pathlib import Path
 
-from openquant import margin as margin_module
-from openquant.explain import explain_formula, formula_ions
-from openquant.lipidmaps import LipidDatabase, LipidRecord
-from openquant.margin import (THIN_MARGIN, Impostor, Margin, cross_validate,
+from milq import margin as margin_module
+from milq.explain import explain_formula, formula_ions
+from milq.lipidmaps import LipidDatabase, LipidRecord
+from milq.margin import (THIN_MARGIN, Impostor, Margin, cross_validate,
                               neighbours)
-from openquant.structure import parse_molblock
+from milq.structure import parse_molblock
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -241,7 +241,7 @@ def test_the_sentence_names_the_impostor_and_the_margin():
 
 # -- where it shows ----------------------------------------------------------- #
 def test_the_report_carries_the_margin_and_says_it():
-    from openquant.infusion_report import InfusionReport, _explanation_block
+    from milq.infusion_report import InfusionReport, _explanation_block
 
     peaks = [(intact(TRUE_FORMULA), 1000.0)]
     chosen = explain_formula(TRUE_FORMULA, "[M+H]+", peaks, name="Cholic acid")
@@ -256,7 +256,7 @@ def test_the_report_carries_the_margin_and_says_it():
 
 
 def test_the_infusions_table_has_a_margin_column():
-    from openquant.infusion_report import (SUMMARY_COLUMNS, InfusionReport,
+    from milq.infusion_report import (SUMMARY_COLUMNS, InfusionReport,
                                            InfusionRow)
 
     assert "Margin" in SUMMARY_COLUMNS
@@ -276,7 +276,7 @@ def test_the_measurement_travels_from_the_panel_to_the_report():
     measuring it again: the same seconds for the same answer, and the page
     and the tab then cannot disagree about it.
     """
-    from openquant import infusion_report
+    from milq import infusion_report
 
     assert "explanation_margin" in Path(
         infusion_report.__file__).read_text(encoding="utf-8")
@@ -295,7 +295,7 @@ def test_the_panel_measures_a_margin_and_says_it():
     """
     from PyQt6 import QtWidgets
 
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     panel = LipidPanel()
@@ -315,7 +315,7 @@ def test_the_panel_measures_a_margin_and_says_it():
 def test_the_panel_forgets_the_margin_when_it_explains_nothing():
     from PyQt6 import QtWidgets
 
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     panel = LipidPanel()

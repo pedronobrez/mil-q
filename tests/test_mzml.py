@@ -14,8 +14,8 @@ import zlib
 import numpy as np
 import pytest
 
-from openquant import mzml, raw
-from openquant.wiff import ChannelInfo
+from milq import mzml, raw
+from milq.wiff import ChannelInfo
 
 
 # --------------------------------------------------------------------------- #
@@ -593,7 +593,7 @@ def _thermo_shaped(source_path, path):
     `referenceableParamGroup` the configuration only points at,
     `controllerType=0 controllerNumber=1 scan=N` ids, a filter string, scan
     start times in **seconds**, an isolation window, a charge state, and
-    `beam-type collision-induced dissociation`. No `openquant experiment`
+    `beam-type collision-induced dissociation`. No `milq experiment`
     parameter, so the channels have to be inferred from the scans; a plain
     `<mzML>` with no index and no offsets to read them out of.
     """
@@ -779,7 +779,7 @@ def test_a_thermo_infusion_is_called_an_infusion(thermo_infusion):
     The verdict reads chromatograms and nothing else, so it says the same
     thing about another vendor's file as about a `.wiff`.
     """
-    from openquant import infusion
+    from milq import infusion
 
     sample = mzml.MzmlFile(thermo_infusion).sample(0)
     verdict = infusion.is_infusion(sample)
@@ -856,8 +856,8 @@ def qapp():
 def test_the_report_builds_for_an_infusion_from_another_vendor(thermo_infusion,
                                                                qapp):
     """The whole path: the verdict, the channel, the average, the pages."""
-    from openquant import infusion, infusion_report
-    from openquant.samples import SampleEntry
+    from milq import infusion, infusion_report
+    from milq.samples import SampleEntry
 
     sample = mzml.MzmlFile(thermo_infusion).sample(0)
     entry = SampleEntry(path=thermo_infusion, sample_index=0, name="CA-d4",

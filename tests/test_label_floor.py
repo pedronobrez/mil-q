@@ -7,7 +7,7 @@ the reader moves it — by dragging the triangle in the axis margin, or by
 typing into the Explorer's spin box, either of which moves the other.
 
 Everything here is arithmetic on made-up spectra. What the floor is worth on
-real data is in `openquant/ui/plots.py`, next to the constants it was
+real data is in `milq/ui/plots.py`, next to the constants it was
 measured against.
 """
 
@@ -20,12 +20,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets  # noqa: E402
 
-from openquant import labels as label_rule  # noqa: E402
-from openquant import spectra_compare as sc  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.ui import plots  # noqa: E402
-from openquant.ui.explorer import ExplorerWorkspace  # noqa: E402
-from openquant.ui.plots import SpectrumView, Trace  # noqa: E402
+from milq import labels as label_rule  # noqa: E402
+from milq import spectra_compare as sc  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.ui import plots  # noqa: E402
+from milq.ui.explorer import ExplorerWorkspace  # noqa: E402
+from milq.ui.plots import SpectrumView, Trace  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

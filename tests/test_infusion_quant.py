@@ -28,18 +28,18 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import audit  # noqa: E402
-from openquant import infusion_quant as iq  # noqa: E402
-from openquant.calibration import LINEAR, CalibrationPoint  # noqa: E402
-from openquant.calibration import fit as fit_curve  # noqa: E402
-from openquant.chemistry import (NEUTRON_SPACING,  # noqa: E402
+from milq import audit  # noqa: E402
+from milq import infusion_quant as iq  # noqa: E402
+from milq.calibration import LINEAR, CalibrationPoint  # noqa: E402
+from milq.calibration import fit as fit_curve  # noqa: E402
+from milq.chemistry import (NEUTRON_SPACING,  # noqa: E402
                                  adduct_from_name, isotope_pattern,
                                  monoisotopic_mass, parse_formula)
-from openquant.components import Component  # noqa: E402
-from openquant.explain import precursor_ions  # noqa: E402
-from openquant.quantify import PeakResult  # noqa: E402
-from openquant.samples import STANDARD, SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.explain import precursor_ions  # noqa: E402
+from milq.quantify import PeakResult  # noqa: E402
+from milq.samples import STANDARD, SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
 from tests.test_infusion_report import (FakeChannel,  # noqa: E402
                                         FakeSample, _grid)
 
@@ -424,7 +424,7 @@ def test_the_results_table_shows_an_infusion_row_unchanged(qapp):
     with no retention time and no width needs no new column, no new branch
     and no isinstance anywhere. This is that claim, driven.
     """
-    from openquant.ui.results_table import COLUMNS, FIELD_INDEX, ResultsTable
+    from milq.ui.results_table import COLUMNS, FIELD_INDEX, ResultsTable
 
     session = _session()
     session.results = iq.results_set([_row()])
@@ -535,7 +535,7 @@ def test_a_session_with_no_infusion_says_so():
 
 
 def test_the_dialog_measures_writes_and_records(qapp, tmp_path):
-    from openquant.ui.infusion_quant_dialog import InfusionQuantDialog
+    from milq.ui.infusion_quant_dialog import InfusionQuantDialog
 
     session = _session(_entry("infusion_A", 1.0, concentration=1.0),
                        _entry("infusion_B", 2.0, concentration=2.0),
@@ -578,7 +578,7 @@ def test_the_dialog_measures_writes_and_records(qapp, tmp_path):
 
 
 def test_the_dialog_offers_the_three_bases_and_uses_the_one_chosen(qapp):
-    from openquant.ui.infusion_quant_dialog import InfusionQuantDialog
+    from milq.ui.infusion_quant_dialog import InfusionQuantDialog
 
     session = _session(_entry("infusion_A", 4.0))
     dialog = InfusionQuantDialog(session)
@@ -594,7 +594,7 @@ def test_the_dialog_offers_the_three_bases_and_uses_the_one_chosen(qapp):
 
 
 def test_the_panel_offers_quantify(qapp):
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.ui.infusions_panel import InfusionsPanel
 
     session = _session(_entry("infusion_A", 4.0))
     panel = InfusionsPanel(session)

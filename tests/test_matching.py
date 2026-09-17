@@ -11,8 +11,8 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from openquant.components import Component
-from openquant.matching import components_from_sample, covers_rt, match_channel
+from milq.components import Component
+from milq.matching import components_from_sample, covers_rt, match_channel
 
 
 @dataclass

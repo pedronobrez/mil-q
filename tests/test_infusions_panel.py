@@ -23,13 +23,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import audit, infusion_report as ir  # noqa: E402
-from openquant import report as batch_report  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.library import (SpectralLibrary,  # noqa: E402
+from milq import audit, infusion_report as ir  # noqa: E402
+from milq import report as batch_report  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.library import (SpectralLibrary,  # noqa: E402
                                entry_from_spectrum)
-from openquant.precursor import MIN_INTENSITY  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq.precursor import MIN_INTENSITY  # noqa: E402
+from milq.session import Session  # noqa: E402
 from tests.test_infusion_report import (ADDUCT, FORMULA, _entry,  # noqa: E402
                                         _ions)
 
@@ -57,7 +57,7 @@ def _with_component(session, name="TESTOL", formula=FORMULA, adduct=ADDUCT):
 def _own_library(entry, channel, name="Testol reference", energy=45.0):
     """A record of one's own, made from the infusion it will be searched by
     — which is what an analyst's library of infused standards actually is."""
-    from openquant.processing import centroid_spectrum
+    from milq.processing import centroid_spectrum
 
     mz, intensity = channel.spectrum_rt_range(0.0, 1.5)
     cmz, cit = centroid_spectrum(mz, intensity)
@@ -92,7 +92,7 @@ def test_one_row_per_infusion_grouped_by_compound(qapp):
 def test_a_sample_that_is_not_an_infusion_is_not_a_row(qapp):
     """The tab is of infusions; a chromatographic run has no average of a
     whole run worth putting on a row."""
-    from openquant.samples import SampleEntry
+    from milq.samples import SampleEntry
     from tests.test_infusion import gradient_sample
 
     entry, _channel = _entry(name="TESTOL_infusion_A")
@@ -376,7 +376,7 @@ def test_the_section_prints_the_reasons_too(qapp):
 # the panel
 # --------------------------------------------------------------------------- #
 def _panel(session):
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.ui.infusions_panel import InfusionsPanel
 
     return InfusionsPanel(session)
 
@@ -513,9 +513,9 @@ def test_the_panel_exports_the_whole_table_not_the_selection(qapp, tmp_path):
 
 
 def test_the_panel_names_the_page_that_explains_it(qapp):
-    from openquant.manual import manual
-    from openquant.ui.help_window import help_page_for
-    from openquant.ui.infusions_panel import HELP_PAGE
+    from milq.manual import manual
+    from milq.ui.help_window import help_page_for
+    from milq.ui.infusions_panel import HELP_PAGE
 
     entry, _channel = _entry()
     panel = _panel(_session(entry))
@@ -528,7 +528,7 @@ def test_the_panel_names_the_page_that_explains_it(qapp):
 
 
 def test_the_analytics_workspace_carries_the_tab(qapp):
-    from openquant.ui.analytics import AnalyticsWorkspace
+    from milq.ui.analytics import AnalyticsWorkspace
 
     entry, _channel = _entry()
     session = _session(entry)

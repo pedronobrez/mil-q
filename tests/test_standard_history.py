@@ -21,10 +21,10 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import standard_history as sh          # noqa: E402
-from openquant.library import (entry_from_spectrum, load_library,  # noqa: E402
+from milq import standard_history as sh          # noqa: E402
+from milq.library import (entry_from_spectrum, load_library,  # noqa: E402
                                parse_msp, write_msp)
-from openquant.qc import ALWAYS_OUT_PERCENT, OUT_PERCENT  # noqa: E402
+from milq.qc import ALWAYS_OUT_PERCENT, OUT_PERCENT  # noqa: E402
 
 #: three peaks, the last of them the base peak
 MZ = np.array([100.0500, 200.1000, 300.1500])
@@ -49,7 +49,7 @@ def a_record(day: str, index: int = 1, energy: float | None = 22.0,
 
 def a_history(records) -> sh.StandardHistory:
     """A history from records, through the text so the parser is in the way."""
-    from openquant.library import format_msp
+    from milq.library import format_msp
 
     return sh.StandardHistory(parse_msp(format_msp(list(records))))
 
@@ -302,7 +302,7 @@ def written(tmp_path):
 
 
 def test_the_dialog_lists_the_series_and_fills_its_tables(qapp, written):
-    from openquant.ui.standard_history_dialog import StandardHistoryDialog
+    from milq.ui.standard_history_dialog import StandardHistoryDialog
 
     dialog = StandardHistoryDialog(written)
     try:
@@ -332,7 +332,7 @@ def test_the_dialog_lists_the_series_and_fills_its_tables(qapp, written):
 
 
 def test_the_dialog_says_so_when_there_is_nothing_to_read(qapp, tmp_path):
-    from openquant.ui.standard_history_dialog import StandardHistoryDialog
+    from milq.ui.standard_history_dialog import StandardHistoryDialog
 
     dialog = StandardHistoryDialog(str(tmp_path / "missing.msp"))
     try:
@@ -344,9 +344,9 @@ def test_the_dialog_says_so_when_there_is_nothing_to_read(qapp, tmp_path):
 
 
 def test_the_dialog_names_a_manual_page_that_exists(qapp):
-    from openquant.manual import manual
-    from openquant.ui.help_window import HELP_PROPERTY
-    from openquant.ui.standard_history_dialog import HELP_PAGE, StandardHistoryDialog
+    from milq.manual import manual
+    from milq.ui.help_window import HELP_PROPERTY
+    from milq.ui.standard_history_dialog import HELP_PAGE, StandardHistoryDialog
 
     dialog = StandardHistoryDialog("")
     try:
@@ -359,7 +359,7 @@ def test_the_dialog_names_a_manual_page_that_exists(qapp):
 
 def test_the_library_panel_opens_the_history_of_what_it_has_written(qapp,
                                                                     tmp_path):
-    from openquant.ui.library_panel import LibraryPanel
+    from milq.ui.library_panel import LibraryPanel
 
     panel = LibraryPanel()
     try:

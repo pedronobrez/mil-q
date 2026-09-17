@@ -12,10 +12,10 @@ lock mass is worse than no lock mass.
 
 import pytest
 
-from openquant.chemistry import (ADDUCTS_BY_NAME, formula_from_name,
+from milq.chemistry import (ADDUCTS_BY_NAME, formula_from_name,
                                  formulas_from_name, monoisotopic_mass,
                                  parse_formula)
-from openquant.components import (Component, fill_formulas, propose_formula,
+from milq.components import (Component, fill_formulas, propose_formula,
                                   written_tolerance)
 
 

@@ -15,8 +15,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtGui, QtWidgets  # noqa: E402
 
-from openquant.manual import manual  # noqa: E402
-from openquant.ui.help_window import (HELP_PROPERTY, describe,  # noqa: E402
+from milq.manual import manual  # noqa: E402
+from milq.ui.help_window import (HELP_PROPERTY, describe,  # noqa: E402
                                       help_page_for)
 
 
@@ -39,7 +39,7 @@ def test_the_nearest_named_ancestor_answers(qapp):
 
 
 def test_the_shell_names_its_workspaces_and_panels(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     pages = manual().pages
@@ -63,14 +63,14 @@ def test_the_shell_names_its_workspaces_and_panels(qapp):
 
 
 def test_f1_resolves_the_focus_and_falls_back_to_the_workspace(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     shell.tabs.setCurrentWidget(shell.analytics)
     assert shell.context_page() in ("analytics-workspace", *manual().pages)
     shell.analytics.results.setFocus()
     # focus is only granted to a shown window; resolve the widget directly
-    from openquant.ui.help_window import help_page_for as resolve
+    from milq.ui.help_window import help_page_for as resolve
     assert resolve(shell.analytics.results) == "results-table"
     assert resolve(shell.analytics.quality) == "batch-qc"
     assert resolve(shell.method) == "method-workspace"
@@ -85,9 +85,9 @@ def test_f1_resolves_the_focus_and_falls_back_to_the_workspace(qapp):
 
 
 def test_dialogs_carry_their_page_and_a_help_button(qapp):
-    from openquant.session import Session
-    from openquant.ui.suggest_dialog import SuggestDialog
-    from openquant.ui.new_project import NewProjectWizard
+    from milq.session import Session
+    from milq.ui.suggest_dialog import SuggestDialog
+    from milq.ui.new_project import NewProjectWizard
 
     dialog = SuggestDialog(Session())
     assert help_page_for(dialog) == "suggest-from-data"

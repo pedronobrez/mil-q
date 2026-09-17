@@ -23,12 +23,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import app  # noqa: E402
-from openquant import folder as folder_module  # noqa: E402
-from openquant import infusion_batch as batch  # noqa: E402
-from openquant import session as session_module  # noqa: E402
-from openquant.explain import formula_ions  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq import app  # noqa: E402
+from milq import folder as folder_module  # noqa: E402
+from milq import infusion_batch as batch  # noqa: E402
+from milq import session as session_module  # noqa: E402
+from milq.explain import formula_ions  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 FORMULA = "C20H34O2"
 ADDUCT = "[M+H]+"
@@ -328,8 +328,8 @@ def test_the_component_table_is_read_from_a_file(qapp, folder, tmp_path):
 
 
 def test_a_project_can_stand_in_for_the_component_table(qapp, tmp_path):
-    from openquant.method import ProcessingMethod
-    from openquant.session import PROJECT_SUFFIX
+    from milq.method import ProcessingMethod
+    from milq.session import PROJECT_SUFFIX
 
     method = ProcessingMethod()
     method.import_components(_components_csv(tmp_path / "c.csv"))
@@ -413,8 +413,8 @@ def test_the_command_line_needs_somewhere_to_write(qapp, tmp_path):
 
 
 def test_the_dialog_runs_the_same_thing(qapp, folder):
-    from openquant.ui.help_window import help_page_for
-    from openquant.ui.infusion_batch_dialog import InfusionBatchDialog
+    from milq.ui.help_window import help_page_for
+    from milq.ui.infusion_batch_dialog import InfusionBatchDialog
 
     dialog = InfusionBatchDialog(start_dir=str(folder))
     assert help_page_for(dialog) == "infusion-report"
@@ -440,7 +440,7 @@ def test_the_dialog_runs_the_same_thing(qapp, folder):
 
 
 def test_the_dialog_says_what_is_missing_rather_than_running(qapp, tmp_path):
-    from openquant.ui.infusion_batch_dialog import InfusionBatchDialog
+    from milq.ui.infusion_batch_dialog import InfusionBatchDialog
 
     dialog = InfusionBatchDialog(start_dir="")
     dialog.folder_edit.setText("")
@@ -458,7 +458,7 @@ def test_the_dialog_says_what_is_missing_rather_than_running(qapp, tmp_path):
 
 
 def test_the_menu_offers_it_whether_or_not_anything_is_open(qapp):
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     window = MainShell()
     assert window.act_infusion_folder.isEnabled()

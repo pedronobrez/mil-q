@@ -24,13 +24,13 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import report  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.calibration import Calibration, CalibrationPoint  # noqa: E402
-from openquant.quantify import PeakResult, ResultsSet  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.xlsx import (FORMATS, Sheet, column_letter, escape,  # noqa: E402
+from milq import report  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.calibration import Calibration, CalibrationPoint  # noqa: E402
+from milq.quantify import PeakResult, ResultsSet  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.xlsx import (FORMATS, Sheet, column_letter, escape,  # noqa: E402
                             sheet_name, write_xlsx)
 
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
@@ -397,7 +397,7 @@ def test_the_shell_exports_the_open_batch_from_its_file_menu(
         qapp, tmp_path, monkeypatch):
     from PyQt6 import QtWidgets
 
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
     shell.session.set_components(
@@ -418,7 +418,7 @@ def test_an_empty_session_is_refused_before_a_dialog_is_shown(qapp, monkeypatch)
     """Nothing to export is a status line, not a file dialog and an error."""
     from PyQt6 import QtWidgets
 
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     shell = MainShell()
 

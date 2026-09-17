@@ -1,4 +1,4 @@
-# OpenQuant
+# MIL-Q
 
 Open source quantitation and review for LC-MS data — SCIEX `.wiff` read
 directly, and **mzML** from any instrument that ProteoWizard can convert. Qualitative review the way PeakView works — TIC, BPC, the
@@ -31,8 +31,17 @@ the same numbers as the macOS build. It is deliberately not in the installer:
 on a real Windows machine an application-local `icuuc.dll` would be found
 before the genuine one. See that directory for why and how.
 
-*Formerly OpenPeakView. Projects saved as `.opvproj` still open; new ones are
-written as `.oqproj`.*
+MIL-Q is the targeted half of the **Multi-omics Identification Laboratory**:
+[MIL-X](https://github.com/pedronobrez/mil-x) explores a sample and MIL-Q
+quantifies one. Explore, then quantify — MIL-X writes the component list
+MIL-Q reads.
+
+*Formerly OpenQuant, and OpenPeakView before that. Nothing has to be moved by
+hand: `OPENQUANT_*` variables are read as `MILQ_*`, the old preferences are
+inherited the first time MIL-Q starts, an existing `~/.openquant` goes on
+being used, and installing MIL-Q on Windows replaces an installed OpenQuant
+rather than leaving two. Projects saved as `.oqproj` and `.opvproj` both
+still open; new ones are written as `.oqproj`.*
 
 ![screenshot](docs/screenshot.png)
 
@@ -352,7 +361,7 @@ pages covering every workspace, every control and every number, linked to one
 another the way a note vault is — each page ends with the pages that link to
 it — with a search box that matches by prefix. **Help ▸ Export manual as
 PDF…** prints the whole set as one A4 document. The pages are Markdown under
-`openquant/help/pages`, and a test fails the build on a link to a page that
+`milq/help/pages`, and a test fails the build on a link to a page that
 does not exist.
 
 The manual exists in **English and Brazilian Portuguese**: the switch is in
@@ -365,7 +374,7 @@ pages describe.
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 -m openquant.bootstrap --install   # fetches the .NET runtime (~30 MB) into ~/.dotnet
+python3 -m milq.bootstrap --install   # fetches the .NET runtime (~30 MB) into ~/.dotnet
 ```
 
 The second command is needed once, and only if there is no .NET 8 runtime on
@@ -385,13 +394,13 @@ python3 run.py demo_QC01.wiff demo_STD_L1.wiff
 
 ## From Python
 
-`openquant.api` is a documented, stable surface over the same code the
+`milq.api` is a documented, stable surface over the same code the
 window runs — open a file, quantify a batch, explain a spectrum, search a
 library, write a report, with no Qt in any signature and no window
 anywhere:
 
 ```python
-from openquant import api
+from milq import api
 
 batch = api.Batch.from_project("Sphingolipids.oqproj")
 rows = batch.process()
@@ -446,7 +455,7 @@ assemblies.
 
 Off Windows they normally do not work, because `Clearcore2.StructuredStorage`
 opens the file through the Windows-only COM API `StgOpenStorageEx`. The module
-[`openquant/bootstrap.py`](openquant/bootstrap.py) works around that:
+[`milq/bootstrap.py`](milq/bootstrap.py) works around that:
 
 1. it locates (or installs) a .NET 8 runtime;
 2. it downloads from NuGet the compatibility assemblies .NET Core does not ship
@@ -474,7 +483,7 @@ the files to mzML with `msconvert` and read the mzML with
 ## Layout
 
 ```
-openquant/
+milq/
   bootstrap.py           .NET runtime setup and the Clearcore2 patch
   wiff.py                WiffFile / Sample / Channel → numpy arrays
   components.py          the component table (CSV)
@@ -520,7 +529,7 @@ own files with `python3 selftest.py`.
 The data layer works on its own, without any UI:
 
 ```python
-from openquant import WiffFile
+from milq import WiffFile
 
 sample = WiffFile("demo_QC01.wiff").sample(0)
 channel = sample.channels[65]                        # TOF PI, precursor 325.20
@@ -538,7 +547,7 @@ gaps look like signal.
 The chemistry layer is independent of both the UI and the vendor libraries:
 
 ```python
-from openquant import chemistry as ch
+from milq import chemistry as ch
 
 counts = ch.parse_formula("C18H34O4")                # 12,13-DiHOME
 ch.monoisotopic_mass(counts)                         # 314.245709

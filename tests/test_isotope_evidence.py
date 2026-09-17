@@ -10,8 +10,8 @@ was not, and neither depends on a real file being to hand.
 import numpy as np
 import pytest
 
-from openquant import explain
-from openquant.chemistry import PATTERN_AGREES, parse_formula
+from milq import explain
+from milq.chemistry import PATTERN_AGREES, parse_formula
 
 FORMULA = "C24H40O5"        # cholic acid
 ADDUCT = "[M+H]+"
@@ -69,7 +69,7 @@ def test_ion_counts_is_the_ion_and_not_the_molecule():
 
 def test_ion_counts_reproduces_every_offered_mass():
     """A composition that does not weigh what the ion weighs is refused."""
-    from openquant.chemistry import ELECTRON_MASS, monoisotopic_mass
+    from milq.chemistry import ELECTRON_MASS, monoisotopic_mass
 
     for ion in ions_of(deuterium=4):
         counts = explain.ion_counts(ion, ADDUCT)
@@ -224,7 +224,7 @@ def test_nothing_asked_says_nothing():
 
 
 def test_the_composition_of_an_ion_that_has_none_is_not_invented():
-    from openquant.structure import Fragment, PredictedIon
+    from milq.structure import Fragment, PredictedIon
 
     piece = Fragment(atoms=frozenset(), formula="C6H6", mass=78.0, cuts=())
     nonsense = PredictedIon(fragment=piece, mz=1234.5678, charge=1, hydrogens=0)
@@ -248,7 +248,7 @@ def qapp():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PyQt6 import QtWidgets
 
-    from openquant.ui import style
+    from milq.ui import style
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     style.apply(app)
@@ -259,10 +259,10 @@ def qapp():
 def panel(qapp, monkeypatch):
     from pathlib import Path
 
-    from openquant import lipidmaps
-    from openquant.lipidmaps import LipidDatabase, LipidRecord
-    from openquant.structure import parse_molblock
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq import lipidmaps
+    from milq.lipidmaps import LipidDatabase, LipidRecord
+    from milq.structure import parse_molblock
+    from milq.ui.lipid_panel import LipidPanel
 
     fixture = Path(__file__).parent / "fixtures" / "LMST04010001.mol"
     molecule = parse_molblock(fixture.read_text(), FORMULA)

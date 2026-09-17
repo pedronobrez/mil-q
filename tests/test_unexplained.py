@@ -21,10 +21,10 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import unexplained as U  # noqa: E402
-from openquant.chemistry import (ADDUCTS_BY_NAME, ELECTRON_MASS,  # noqa: E402
+from milq import unexplained as U  # noqa: E402
+from milq.chemistry import (ADDUCTS_BY_NAME, ELECTRON_MASS,  # noqa: E402
                                  monoisotopic_mass, parse_formula)
-from openquant.explain import explain_formula  # noqa: E402
+from milq.explain import explain_formula  # noqa: E402
 
 FORMULA = "C20H34O2"
 ADDUCT = "[M+H]+"
@@ -79,7 +79,7 @@ def test_a_sodium_satellite_of_a_matched_ion_is_named_as_one():
 
 
 def test_a_carbon_13_satellite_is_named_before_any_composition():
-    from openquant.chemistry import NEUTRON_SPACING
+    from milq.chemistry import NEUTRON_SPACING
 
     satellite = WATER_LOSS + NEUTRON_SPACING
     peaks = [(PRECURSOR, 10_000.0), (WATER_LOSS, 6_000.0), (satellite, 1_200.0)]
@@ -212,7 +212,7 @@ def test_a_named_mass_beats_a_composition_at_the_same_peak():
     constrained search would also have answered — here the carbon-13
     satellite of the water loss, which `C20H34O` reaches at 15 ppm.
     """
-    from openquant.chemistry import NEUTRON_SPACING
+    from milq.chemistry import NEUTRON_SPACING
 
     satellite = WATER_LOSS + NEUTRON_SPACING
     peaks = [(PRECURSOR, 10_000.0), (WATER_LOSS, 6_000.0), (satellite, 900.0)]
@@ -301,7 +301,7 @@ def test_the_report_table_names_what_each_unexplained_peak_might_be(qapp):
     each peak might be and how far the guess sits from the measured mass.
     """
     from tests.test_infusion_report import STRAY, _entry, _explanation
-    from openquant import infusion_report as ir
+    from milq import infusion_report as ir
 
     entry, channel = _entry()
     explanation = _explanation(entry, channel)
@@ -336,7 +336,7 @@ def test_the_report_survives_a_module_that_answers_nothing(qapp):
     what it printed before there was anything to say about them.
     """
     from tests.test_infusion_report import _entry, _explanation
-    from openquant import infusion_report as ir
+    from milq import infusion_report as ir
 
     entry, channel = _entry()
     explanation = _explanation(entry, channel)
@@ -358,7 +358,7 @@ def test_the_pool_reaches_below_the_printed_floor(qapp):
     the printed table starts at two per cent, so the evidence has to reach
     further down than the list does.
     """
-    from openquant import infusion_report as ir
+    from milq import infusion_report as ir
 
     assert ir.ANNOTATION_POOL > 1
     assert ir.ANNOTATION_POOL_PEAKS > ir.PEAKS_LISTED
@@ -390,7 +390,7 @@ def test_an_isotope_pattern_ranks_the_candidates_where_there_is_one():
     Where the spectrum carries satellites the composition is ranked by them,
     which is the only evidence that separates two formulas at the same mass.
     """
-    from openquant.chemistry import NEUTRON_SPACING
+    from milq.chemistry import NEUTRON_SPACING
 
     ranges = U.sub_formula_ranges(FORMULA, ADDUCTS_BY_NAME[ADDUCT])
     mz = np.array([PIECE, PIECE + NEUTRON_SPACING])

@@ -8,10 +8,10 @@ windows narrower than the sampling can resolve. The point of the module is
 that none of that needed a day.
 """
 
-from openquant.components import Component
-from openquant.health import COMFORTABLE_POINTS, SERIOUS, WARNING, check_method
-from openquant.method import ProcessingMethod
-from openquant.samples import SampleEntry
+from milq.components import Component
+from milq.health import COMFORTABLE_POINTS, SERIOUS, WARNING, check_method
+from milq.method import ProcessingMethod
+from milq.samples import SampleEntry
 from tests.test_matching import Channel, Sample
 
 

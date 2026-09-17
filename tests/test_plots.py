@@ -12,7 +12,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets
 
-from openquant.ui.plots import ChromatogramView, SpectrumView, Trace
+from milq.ui.plots import ChromatogramView, SpectrumView, Trace
 
 
 @pytest.fixture(scope="module")
@@ -122,8 +122,8 @@ def test_peak_panels_survive_repainting(qapp):
     Regression: axis tick fonts built from an empty family name segfaulted Qt
     the moment a panel measured its tick labels.
     """
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakReviewGrid
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakReviewGrid
 
     grid = PeakReviewGrid()
     grid.resize(900, 500)
@@ -143,8 +143,8 @@ def test_peak_panels_survive_repainting(qapp):
 
 
 def test_peak_grid_pages_and_selection(qapp):
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakReviewGrid
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakReviewGrid
 
     grid = PeakReviewGrid()
     grid.col_spin.setValue(2)
@@ -165,8 +165,8 @@ def test_peak_grid_pages_and_selection(qapp):
 
 
 def test_peak_panel_reports_a_missing_peak(qapp):
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakPanel
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakPanel
 
     panel = PeakPanel()
     result = PeakResult("s1", "QC", "Oxy", note="no peak above noise")
@@ -176,8 +176,8 @@ def test_peak_panel_reports_a_missing_peak(qapp):
 
 
 def test_peak_grid_zoom_modes(qapp):
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakReviewGrid
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakReviewGrid
 
     grid = PeakReviewGrid()
     result = PeakResult("s", "QC", "Oxy", area=10.0, rt=13.1,
@@ -197,8 +197,8 @@ def test_peak_grid_zoom_modes(qapp):
 
 
 def test_peak_grid_zoom_without_an_expected_window(qapp):
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakReviewGrid
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakReviewGrid
 
     grid = PeakReviewGrid()
     grid.zoom_combo.setCurrentIndex(0)
@@ -214,7 +214,7 @@ def test_a_centroided_spectrum_is_not_centroided_a_second_time(qapp):
     centroids it averages a stick with its neighbours, and the mass moves — a
     ceramide's 264.2668 was reported as 264.1181, 149 mDa out.
     """
-    from openquant.ui.plots import SpectrumView, Trace
+    from milq.ui.plots import SpectrumView, Trace
 
     # one clean gaussian peak in profile, the way a TOF records it
     centre, width = 264.2668, 0.006
@@ -236,7 +236,7 @@ def test_a_centroided_spectrum_is_not_centroided_a_second_time(qapp):
 # -- how far the view may go -------------------------------------------------- #
 @pytest.fixture
 def fenced(qapp):
-    from openquant.ui.plots import ChromatogramView, Trace
+    from milq.ui.plots import ChromatogramView, Trace
 
     x = np.linspace(0, 21.5, 400)
     y = 1e6 * np.exp(-((x - 12) ** 2) / 2) + 5e4
@@ -280,7 +280,7 @@ def test_zooming_out_past_the_data_is_refused(qapp, fenced):
 
 def test_a_mirrored_trace_keeps_the_room_it_actually_uses(qapp):
     """The fence is against empty space, not against data that goes negative."""
-    from openquant.ui.plots import ChromatogramView, Trace
+    from milq.ui.plots import ChromatogramView, Trace
 
     x = np.linspace(0, 20, 200)
     view = ChromatogramView()
@@ -297,7 +297,7 @@ def test_a_mirrored_trace_keeps_the_room_it_actually_uses(qapp):
 
 
 def test_no_traces_leaves_the_view_unfenced(qapp):
-    from openquant.ui.plots import ChromatogramView
+    from milq.ui.plots import ChromatogramView
 
     view = ChromatogramView()
     view.resize(400, 300)
@@ -312,8 +312,8 @@ def test_the_shaded_area_is_the_peak_over_its_baseline(qapp):
     The band said where the limits were, which a reader takes for the area —
     and on a peak a couple of points wide the two look nothing alike.
     """
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakPanel
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakPanel
 
     x = np.linspace(0.0, 10.0, 400)
     y = 1000.0 * np.exp(-((x - 5.0) ** 2) / (2 * 0.1 ** 2)) + 50.0
@@ -338,8 +338,8 @@ def test_the_shaded_area_is_the_peak_over_its_baseline(qapp):
 
 
 def test_a_panel_with_no_peak_shades_nothing(qapp):
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakPanel
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakPanel
 
     x = np.linspace(0.0, 10.0, 100)
     y = np.zeros_like(x)
@@ -353,8 +353,8 @@ def test_a_panel_with_no_peak_shades_nothing(qapp):
 
 
 def test_a_review_panel_cannot_be_zoomed_off_its_trace(qapp):
-    from openquant.quantify import PeakResult
-    from openquant.ui.peak_review import PeakPanel
+    from milq.quantify import PeakResult
+    from milq.ui.peak_review import PeakPanel
 
     x = np.linspace(2.0, 8.0, 200)
     y = 500.0 * np.exp(-((x - 5.0) ** 2) / (2 * 0.1 ** 2))
@@ -486,8 +486,8 @@ def test_a_dying_pane_is_left_alone(qapp):
     """
     import pyqtgraph as pg
 
-    from openquant.ui.chrom_area import ChromatogramArea
-    from openquant.ui.plots import BasePlot, colour
+    from milq.ui.chrom_area import ChromatogramArea
+    from milq.ui.plots import BasePlot, colour
 
     host = QtWidgets.QWidget()
     layout = QtWidgets.QVBoxLayout(host)

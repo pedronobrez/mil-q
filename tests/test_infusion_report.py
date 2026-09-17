@@ -22,14 +22,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import audit, infusion_report as ir  # noqa: E402
-from openquant.explain import explain_formula, formula_ions  # noqa: E402
-from openquant.library import (SpectralLibrary,  # noqa: E402
+from milq import audit, infusion_report as ir  # noqa: E402
+from milq.explain import explain_formula, formula_ions  # noqa: E402
+from milq.library import (SpectralLibrary,  # noqa: E402
                                entry_from_spectrum)
-from openquant.precursor import MIN_INTENSITY  # noqa: E402
-from openquant.samples import SampleEntry  # noqa: E402
-from openquant.session import Session  # noqa: E402
-from openquant.wiff import ChannelInfo  # noqa: E402
+from milq.precursor import MIN_INTENSITY  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
+from milq.session import Session  # noqa: E402
+from milq.wiff import ChannelInfo  # noqa: E402
 
 FORMULA = "C20H34O2"
 ADDUCT = "[M+H]+"
@@ -145,7 +145,7 @@ def _survey_peaks(scale: float = 30_000.0) -> dict:
     is the difference the adduct evidence is built on: without them there
     is a mass and nothing to say whether it is a monoisotopic ion.
     """
-    from openquant.chemistry import ADDUCTS_BY_NAME, ion_pattern
+    from milq.chemistry import ADDUCTS_BY_NAME, ion_pattern
 
     return {mz: scale * abundance for mz, abundance
             in ion_pattern(FORMULA, ADDUCTS_BY_NAME[ADDUCT], max_peaks=3)}
@@ -181,8 +181,8 @@ def _entry(name="TESTOL_infusion_A", survives=True, energy=20.0,
 
 def _explanation(entry, channel):
     mz, intensity = channel.spectrum_rt_range(0.0, 1.5)
-    from openquant.explain import significant_peaks
-    from openquant.processing import centroid_spectrum
+    from milq.explain import significant_peaks
+    from milq.processing import centroid_spectrum
 
     cmz, cit = centroid_spectrum(mz, intensity)
     return explain_formula(FORMULA, ADDUCT, significant_peaks(cmz, cit),
@@ -190,7 +190,7 @@ def _explanation(entry, channel):
 
 
 def _library(entry, channel, energy=45.0):
-    from openquant.processing import centroid_spectrum
+    from milq.processing import centroid_spectrum
 
     mz, intensity = channel.spectrum_rt_range(0.0, 1.5)
     cmz, cit = centroid_spectrum(mz, intensity)
@@ -524,7 +524,7 @@ def test_a_heading_is_not_left_behind_by_its_picture(qapp, tmp_path):
     it fitted — so the page test alone left a figure's title at the foot of
     one page and the figure at the top of the next.
     """
-    from openquant.report import OBJECT_CHARACTER
+    from milq.report import OBJECT_CHARACTER
 
     entry, channel = _entry()
     explanation = _explanation(entry, channel)
@@ -534,7 +534,7 @@ def test_a_heading_is_not_left_behind_by_its_picture(qapp, tmp_path):
     assert os.path.exists(path)
 
     from PyQt6 import QtCore, QtGui
-    from openquant import report as batch_report
+    from milq import report as batch_report
 
     writer = QtGui.QPdfWriter(str(tmp_path / "measure.pdf"))
     writer.setPageSize(QtGui.QPageSize(QtGui.QPageSize.PageSizeId.A4))
@@ -568,7 +568,7 @@ def test_a_heading_is_not_left_behind_by_its_picture(qapp, tmp_path):
 # the Explorer and the dialog
 # --------------------------------------------------------------------------- #
 def _explorer(qapp, entries):
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.ui.explorer import ExplorerWorkspace
 
     session = Session()
     session.entries.extend(entries)
@@ -593,7 +593,7 @@ def test_the_dialog_writes_the_report_and_records_it(qapp, tmp_path):
     first, _c1 = _entry(name="TESTOL_infusion_A")
     second, _c2 = _entry(name="TESTOL_infusion_B")
     session, explorer = _explorer(qapp, [first, second])
-    from openquant.ui.infusion_report_dialog import InfusionReportDialog
+    from milq.ui.infusion_report_dialog import InfusionReportDialog
 
     dialog = InfusionReportDialog(explorer, parent=explorer)
     # the other infusion of the same compound comes ticked
@@ -626,7 +626,7 @@ def test_the_dialog_reports_every_open_infusion_in_one_document(qapp, tmp_path):
     first, _c1 = _entry(name="TESTOL_infusion_A")
     second, _c2 = _entry(name="OTHEROL_infusion", stray_only=True)
     session, explorer = _explorer(qapp, [first, second])
-    from openquant.ui.infusion_report_dialog import InfusionReportDialog
+    from milq.ui.infusion_report_dialog import InfusionReportDialog
 
     dialog = InfusionReportDialog(explorer, batch=True, parent=explorer)
     assert dialog.list is None                    # nothing to compare against
@@ -650,7 +650,7 @@ def test_the_dialog_reports_every_open_infusion_in_one_document(qapp, tmp_path):
 def test_the_dialog_refuses_a_path_it_was_not_given(qapp):
     entry, _channel = _entry()
     session, explorer = _explorer(qapp, [entry])
-    from openquant.ui.infusion_report_dialog import InfusionReportDialog
+    from milq.ui.infusion_report_dialog import InfusionReportDialog
 
     dialog = InfusionReportDialog(explorer, parent=explorer)
     dialog.path_edit.setText("")
@@ -666,9 +666,9 @@ def test_the_dialog_refuses_a_path_it_was_not_given(qapp):
 def test_the_dialog_names_the_page_that_explains_it(qapp):
     entry, _channel = _entry()
     session, explorer = _explorer(qapp, [entry])
-    from openquant.manual import manual
-    from openquant.ui.help_window import help_page_for
-    from openquant.ui.infusion_report_dialog import HELP_PAGE, \
+    from milq.manual import manual
+    from milq.ui.help_window import help_page_for
+    from milq.ui.infusion_report_dialog import HELP_PAGE, \
         InfusionReportDialog
 
     dialog = InfusionReportDialog(explorer, parent=explorer)
@@ -722,7 +722,7 @@ def _shifted(name="TESTOL_infusion_A", ppm=6.0, rungs=3):
 
 
 def _method_session(formula=FORMULA, adduct=ADDUCT, name="TESTOL"):
-    from openquant.components import Component
+    from milq.components import Component
 
     session = Session()
     session.method.replace_all(
@@ -860,7 +860,7 @@ def test_the_summary_column_says_when_a_fit_stands_unapplied():
 
 def test_the_basis_line_prints_the_raw_and_the_corrected_error(qapp):
     """The Explorer's sentence, on the panel that scores the spectrum."""
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     entry, channel = _shifted(ppm=6.0)
     session = _method_session()
@@ -870,7 +870,7 @@ def test_the_basis_line_prints_the_raw_and_the_corrected_error(qapp):
 
     panel = LipidPanel()
     mz, intensity = channel.spectrum_rt_range(0.0, 1.5)
-    from openquant.processing import centroid_spectrum
+    from milq.processing import centroid_spectrum
 
     cmz, cit = centroid_spectrum(mz, intensity)
     panel.set_spectrum(correction.apply(cmz), cit, channel.info.precursor,
@@ -890,7 +890,7 @@ def test_the_basis_line_prints_the_raw_and_the_corrected_error(qapp):
 def test_the_explorer_names_the_rungs_in_the_title(qapp):
     entry, channel = _shifted(ppm=6.0)
     session, explorer = _explorer(qapp, [entry])
-    from openquant.components import Component
+    from milq.components import Component
 
     # the tree lands on an infusion and averages it, which is where the fit
     # happens — so the method is filled in afterwards here on purpose, to
@@ -918,7 +918,7 @@ def test_the_explorer_names_the_rungs_in_the_title(qapp):
 def test_a_trace_is_picked_once_and_a_new_trace_again(monkeypatch):
     """`picked` answers the same question about the same trace from memory,
     hands back a copy, and picks afresh when the trace is replaced."""
-    from openquant import spectra_compare as sc
+    from milq import spectra_compare as sc
 
     mz = np.linspace(100.0, 110.0, 2001)
     intensity = np.exp(-((mz - 103.0) ** 2) / 0.0002) * 1000 + \

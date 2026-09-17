@@ -23,12 +23,12 @@ import zipfile
 import numpy as np
 import pytest
 
-from openquant import api, batches, compare, processing, qc, quantify, recalibrate, suggest
-from openquant.components import fill_formulas, precursor_repairs
-from openquant.health import check_method, survey_coverage
-from openquant.mass_drift import mass_drift
-from openquant.sampling import sampling_report
-from openquant.schedule import build_schedule, suggested_cycle
+from milq import api, batches, compare, processing, qc, quantify, recalibrate, suggest
+from milq.components import fill_formulas, precursor_repairs
+from milq.health import check_method, survey_coverage
+from milq.mass_drift import mass_drift
+from milq.sampling import sampling_report
+from milq.schedule import build_schedule, suggested_cycle
 
 from . import data
 

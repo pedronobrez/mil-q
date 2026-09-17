@@ -14,9 +14,9 @@ import sys
 
 from PyQt6 import QtWidgets
 
-import openquant
-from openquant.ui import style
-from openquant.ui.theme import apply_defaults
+import milq
+from milq.ui import style
+from milq.ui.theme import apply_defaults
 
 
 def main() -> int:
@@ -25,7 +25,7 @@ def main() -> int:
     apply_defaults()
     print("style applied", flush=True)
 
-    from openquant.ui.shell import MainShell
+    from milq.ui.shell import MainShell
 
     window = MainShell()
     print("shell built", flush=True)
@@ -33,13 +33,13 @@ def main() -> int:
     print("shown", flush=True)
     app.processEvents()
     print("events processed", flush=True)
-    print(f"OpenQuant {openquant.__version__} started on {platform.system()}",
+    print(f"MIL-Q {milq.__version__} started on {platform.system()}",
           flush=True)
 
     # the same shutdown the real application does; without it PyQt's atexit
     # hook walks wrappers whose Qt objects are gone and the process dies with
     # signal 11 after a completely successful run
-    from openquant.app import _shut_down
+    from milq.app import _shut_down
 
     _shut_down(app, window)
     return 0

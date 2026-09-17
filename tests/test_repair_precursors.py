@@ -16,12 +16,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets
 
-from openquant.audit import NAME_RENAMED, PRECURSOR_REPAIRED
-from openquant.components import Component, precursor_repairs
-from openquant.quantify import PeakResult
-from openquant.session import Session
-from openquant.ui.method_workspace import COL, MethodWorkspace
-from openquant.ui.repair_dialog import (KEEP_THE_NAME, NOTHING_OFFERED,
+from milq.audit import NAME_RENAMED, PRECURSOR_REPAIRED
+from milq.components import Component, precursor_repairs
+from milq.quantify import PeakResult
+from milq.session import Session
+from milq.ui.method_workspace import COL, MethodWorkspace
+from milq.ui.repair_dialog import (KEEP_THE_NAME, NOTHING_OFFERED,
                                         RepairPrecursorsDialog,
                                         suggestion_label)
 

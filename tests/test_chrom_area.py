@@ -9,8 +9,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets
 
-from openquant.ui.chrom_area import ChromatogramArea
-from openquant.ui.plots import Trace
+from milq.ui.chrom_area import ChromatogramArea
+from milq.ui.plots import Trace
 
 
 @pytest.fixture(scope="module")

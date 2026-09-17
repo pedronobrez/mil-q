@@ -8,9 +8,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets
 
-from openquant.components import Component
-from openquant.session import Session
-from openquant.ui.method_workspace import (
+from milq.components import Component
+from milq.session import Session
+from milq.ui.method_workspace import (
     COL, MAX_AUTO_WIDTH, MethodWorkspace,
 )
 

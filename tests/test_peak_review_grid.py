@@ -23,8 +23,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant.quantify import PeakResult  # noqa: E402
-from openquant.ui.peak_review import PeakReviewGrid  # noqa: E402
+from milq.quantify import PeakResult  # noqa: E402
+from milq.ui.peak_review import PeakReviewGrid  # noqa: E402
 
 
 @pytest.fixture(scope="module")

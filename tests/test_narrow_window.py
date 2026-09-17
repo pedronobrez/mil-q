@@ -16,11 +16,11 @@ the detector may see, which also truncated every peak at the boundary.
 import numpy as np
 import pytest
 
-from openquant.components import Component
-from openquant.method import ProcessingMethod
-from openquant.quantify import (MARGIN_SCANS, detection_range,
+from milq.components import Component
+from milq.method import ProcessingMethod
+from milq.quantify import (MARGIN_SCANS, detection_range,
                                 integrate_component)
-from openquant.samples import SampleEntry
+from milq.samples import SampleEntry
 from tests.test_matching import Channel, Sample
 
 #: 14.6 s, the cycle of the acquisition this was found on

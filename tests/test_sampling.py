@@ -11,12 +11,12 @@ and that the recommended cycle times follow from the width.
 import numpy as np
 import pytest
 
-from openquant import processing as pr
-from openquant.components import Component
-from openquant.method import ProcessingMethod
-from openquant.quantify import integrate_component, process
-from openquant.samples import SampleEntry
-from openquant.sampling import (BASE_IN_FWHM, BASE_POINTS, FIT_IN_FWHM,
+from milq import processing as pr
+from milq.components import Component
+from milq.method import ProcessingMethod
+from milq.quantify import integrate_component, process
+from milq.samples import SampleEntry
+from milq.sampling import (BASE_IN_FWHM, BASE_POINTS, FIT_IN_FWHM,
                                 sampling_report)
 from tests.test_matching import Channel, Sample
 
@@ -121,7 +121,7 @@ def test_rows_from_before_the_count_are_left_out_and_said():
 
 
 def test_no_results_is_said_rather_than_reported_as_zero():
-    from openquant.quantify import ResultsSet
+    from milq.quantify import ResultsSet
     report = sampling_report(ResultsSet(), _entries(), _method())
     assert "process the batch" in report.note
     assert report.median_cycle is None and report.median_points is None
@@ -132,9 +132,9 @@ def test_the_report_section_and_the_qc_tab_show_it(tmp_path):
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant import report
-    from openquant.session import Session
-    from openquant.ui.qc_panel import QualityPanel
+    from milq import report
+    from milq.session import Session
+    from milq.ui.qc_panel import QualityPanel
 
     entries, method = _entries(sigma=0.04), _method()
     session = Session()
@@ -158,7 +158,7 @@ def test_the_cycle_memo_answers_what_the_plain_measurement_answered():
     not once per component. The memo must not change the answer, and a second
     component on the same channel must get the same number.
     """
-    from openquant.sampling import _cycle
+    from milq.sampling import _cycle
 
     entries, method = _entries(3), _method()
     component = method.components[0]
@@ -171,8 +171,8 @@ def test_the_cycle_memo_answers_what_the_plain_measurement_answered():
 
 
 def test_a_component_no_channel_serves_still_reports_no_cycle():
-    from openquant.components import Component
-    from openquant.sampling import _cycle
+    from milq.components import Component
+    from milq.sampling import _cycle
 
     stranger = Component("Z", 1234.5, 99.0, rt=6.4, rt_halfwidth=0.5)
     memo: dict = {}

@@ -18,9 +18,9 @@ import threading
 
 import pytest
 
-from openquant import lipidmaps as lm
-from openquant.lipidmaps import LipidDatabase, LipidRecord
-from openquant.structure import Structure, parse_molblock
+from milq import lipidmaps as lm
+from milq.lipidmaps import LipidDatabase, LipidRecord
+from milq.structure import Structure, parse_molblock
 
 
 def _ethanol() -> str:

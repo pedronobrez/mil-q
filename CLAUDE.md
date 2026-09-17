@@ -1,4 +1,4 @@
-# OpenQuant — status and working notes
+# MIL-Q — status and working notes
 
 Open source review and quantitation for LC-MS data. A working replacement for
 SCIEX PeakView (qualitative) and MultiQuant (quantitative), reading `.wiff`
@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 0.10.1 released. 1924 tests. Public repository.**
+**Version 1.0.0 released. 1936 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -38,7 +38,7 @@ These were learned the expensive way. Breaking one has cost a day before.
   the stored points instead moved every integrated area by 2%.
 - **Raw data is never committed.** `.wiff`, `.wiff.scan`, `.mzML`, `.csv` are
   ignored. Verified: no raw file has ever been in the history.
-- **The manual ships with every version.** `openquant/help/pages` is the
+- **The manual ships with every version.** `milq/help/pages` is the
   reference the user feeds to NotebookLM; a release that changes what the
   application does changes the page that describes it, adds itself to
   `version-history.md`, and regenerates the PDF for the user (never
@@ -53,7 +53,7 @@ These were learned the expensive way. Breaking one has cost a day before.
 ## Layout
 
 ```
-openquant/
+milq/
   raw.py          open_raw(path) → the right reader by extension. The only
                   place that knows formats exist.
   wiff.py         SCIEX, through Clearcore2 over .NET
@@ -95,6 +95,9 @@ openquant/
   purity.py       the d0…dn envelope solved; refuses itself without
                   satellites
   api.py          the stable Python surface, imported lazily
+  legacy.py       everything that knows the name before this one: the
+                  OPENQUANT_* variables read as MILQ_*, the preferences
+                  inherited once, and which home directory is used
   explain_any.py  one Explain: name, LIPID MAPS, formula and drawing
                   ranked alike, every route listed
   energy.py       which collision energy for identification, for
@@ -563,9 +566,15 @@ UV detector, is not implemented there) — untested on real Windows.
   numeric cell read back); LibreOffice untried, and the `export` page says so — as it says no Skyline transition list has
   been imported into Skyline, only that its headers were read off the
   reader that consumes them in the ProteoWizard source.
-- **The Dock icon is whoever spoke last.** The bundle carries a layered
-  Liquid Glass icon (`packaging/icons/OpenQuant.icon`, compiled by Xcode
-  26's `actool` on the runner into `Assets.car`, `CFBundleIconName`), and
+- **The Dock icon is whoever spoke last.** *1.0.0 ships no layered icon:
+  the document drew OpenQuant's two co-eluting peaks and MIL-Q's mark has
+  not been redrawn for Icon Composer, so `make_liquid_icon.sh` says so and
+  exits and the `.icns` from the identity kit is what the Dock shows. The
+  finding below is why `app.py` still sets no window icon inside the
+  bundle, and it is what to re-read when the document comes back.* The
+  bundle carried a layered Liquid Glass icon (`packaging/icons/MIL-Q.icon`,
+  compiled by Xcode 26's `actool` on the runner into `Assets.car`,
+  `CFBundleIconName`), and
   `assetutil --info` and `NSWorkspace.icon(forFile:)` both showed it drawn
   in glass on macOS 26 — while the Dock showed the blue square for as long
   as the application ran. Qt hands `setWindowIcon` to the Dock as the
@@ -1064,7 +1073,7 @@ UV detector, is not implemented there) — untested on real Windows.
   −523 at most. Read the Δ by mass, not by point (the grid moves a
   fraction of a point between scans, so a peak's residual is a dipole). A
   frame costs 52–89 ms only because the pane is not rescaled while playing.
-- **The API is a promise; the modules are not.** `openquant/api.py` is the
+- **The API is a promise; the modules are not.** `milq/api.py` is the
   only surface with one — `__all__`, methods, keyword names, dataclass
   fields; `api.VERSION` rises when that breaks. Every import is inside the
   function that needs it, so importing it starts neither Qt nor a session;
@@ -1234,7 +1243,7 @@ UV detector, is not implemented there) — untested on real Windows.
   `spectrum_cache.py` keys the raw average on the acquisition and its
   `.wiff.scan` by size and mtime, the channel, the range, the spray mask's
   bytes and `include_unstable`, stored as one `.npz` in `<project>.oqcache/`
-  (or the system cache with no project; `cache/dir`, `OPENQUANT_CACHE_DIR`,
+  (or the system cache with no project; `cache/dir`, `MILQ_CACHE_DIR`,
   `CACHE_MAX_MB` 512, LRU, every failure a miss). Raw, before any mass
   correction, which is applied on read. Measured on the nine infusions:
   cold 12.6–20.9 s, warm 7.7–8.5 s, one `.scan` touched 8.9 s; 27 infusions
@@ -1326,7 +1335,7 @@ UV detector, is not implemented there) — untested on real Windows.
   ZenoTOF infusions, eight DIA runs, two Thermo mzML — each asserting one
   figure at the tolerance it was written to. `tests/conftest.py` marks
   everything under the directory `real` and skips it unless
-  `OPENQUANT_REAL_DATA=1` or `-m real`, so CI runs `pytest -q` unchanged;
+  `MILQ_REAL_DATA=1` or `-m real`, so CI runs `pytest -q` unchanged;
   each test skips itself naming the path it wanted; only the two sets this
   repository already names carry a default path, the rest come from an
   environment variable or an untracked `tests/real/data.local.json`.
@@ -1455,6 +1464,35 @@ UV detector, is not implemented there) — untested on real Windows.
   kind too and does nothing, so nothing holding one has to know which it
   has. `tests/test_lipidmaps_index.py` asserts the *state* rather than the
   removal, because the removal passes on this machine either way.
+- **A rename is a promise to read the old name, not to write it.**
+  OpenQuant became MIL-Q in 1.0.0 — the targeted half of the *Multi-omics
+  Identification Laboratory* family beside MIL-X, which was OpenDIAL. The
+  precedent is this project's own OpenPeakView rename in 0.6.1, and the
+  rule it set held: **the old name goes on being understood and is never
+  written again.** `milq/legacy.py` is the only module that knows it, so
+  retiring it later is deleting one file and three calls. Three things it
+  promises, each with a test in `tests/test_the_old_name.py`: every
+  `OPENQUANT_X` is read as `MILQ_X` where that is unset, at *package
+  import* rather than in each entry point, because importing the package
+  is the one thing the window, the command line, the API and the suite
+  have in common (`OPENPEAKVIEW_HOME`, the name before last, is read as
+  `MILQ_HOME`); the preferences are copied out of the *OpenQuant* store
+  the first time the new one is found empty, and never again; and
+  `~/.openquant` is **kept in place** where it exists rather than moved to
+  `~/.milq`, because it holds a .NET runtime and a 45 MB index and moving
+  either to satisfy a change of name is minutes of work and a download to
+  redo if it goes wrong. `inherit_settings` takes the old store as a
+  parameter for a reason that cost a test: the native store on macOS is a
+  daemon with a cache, so a test that wrote through one `QSettings` and
+  read through another was measuring `cfprefsd`. What did *not* change:
+  `.oqproj` is still read and written, `.opvproj` still read, and the
+  Windows installer keeps its `UpgradeCode` so that installing MIL-Q
+  replaces an installed OpenQuant instead of leaving two. The mechanical
+  half — 1,013 lowercase, 206 capitalised and 39 shouted occurrences over
+  169 files — was one scripted pass with four historical statements held
+  back by sentinel, because "renamed to OpenQuant from OpenPeakView" in
+  the 0.6.1 row is a fact about the past and rewriting it would have made
+  the record lie.
 - **A `.wiff` without its `.wiff.scan` opens and looks whole.** The method,
   the metadata and every channel's TIC are in the `.wiff`; the scans are
   not, so the first spectrum throws, and so do BPC, XIC, the contour and
@@ -1621,7 +1659,7 @@ view (`contour.py`), and integration algorithms with a comparison mode
   run the suite and start the application; the SCIEX path is checked only as
   far as "the assemblies load" — on the Windows 11 desktop they load on
   .NET Framework 4.8 with no .NET 8 present, and `python -m
-  openquant.bootstrap --install` used to refuse that machine for having no
+  milq.bootstrap --install` used to refuse that machine for having no
   .NET 8 (`_main` now installs only off Windows). Copying one `.wiff` to
   that machine would close this question.
 - **Two things measured on Windows and left for later.** Opening an mzML is
@@ -1656,7 +1694,7 @@ A tag runs everything and publishes the three installers. Estimated: 40 pushes,
 2 releases and 4 weeks come to about 20% of the allowance.
 
 **Releasing is one command.** `git tag -a vX.Y.Z -m "…" && git push origin
-vX.Y.Z`. Bump `openquant/__init__.py` in the same commit — `pyproject` and the
+vX.Y.Z`. Bump `milq/__init__.py` in the same commit — `pyproject` and the
 PyInstaller spec read it from there, and a tag whose version disagrees with the
 package produces installers named after the wrong one.
 
@@ -1666,7 +1704,7 @@ package produces installers named after the wrong one.
 
 | Symptom | Look at |
 |---|---|
-| A `.wiff` will not open | `bootstrap.ensure()`; run `python -m openquant.bootstrap --install` |
+| A `.wiff` will not open | `bootstrap.ensure()`; run `python -m milq.bootstrap --install` |
 | Two builds disagree | `--digest` on both, `diff` the output; the Windows build writes CRLF |
 | An mzML has the wrong number of channels | `mzml.acquisition_cycles`; a file with no repeating cycle falls back to scan properties |
 | A spectrum looks like it has a raised baseline | `restore_profile_zeros` did not fire; the file is probably centroided |
@@ -1678,10 +1716,10 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-1924 tests, two skipped (4 bundle-weight tests need a built bundle), plus 56 under `tests/real/` that run only with `OPENQUANT_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+1936 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
-`tests/conftest.py` sets `OPENQUANT_SETTINGS` before any widget exists so
+`tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so
 the suite writes an INI file of its own. Before that every test that
 loaded a library or closed the shell wrote into the person's real
 preferences — a pytest temporary path was the remembered spectral
@@ -1695,5 +1733,5 @@ run: the modules share one `QApplication`, and Python's collector was freeing
 C++ widgets it still held. macOS and Windows read the same freed memory
 without noticing, which is luck rather than correctness.
 
-Static analysis runs in CI: `ruff check openquant tests --select F,E9,B019`.
+Static analysis runs in CI: `ruff check milq tests --select F,E9,B019`.
 It found a `NameError` that had been sitting in the statistics table.

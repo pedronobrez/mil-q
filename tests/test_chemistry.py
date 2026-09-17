@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from openquant import chemistry as ch
+from milq import chemistry as ch
 
 
 # --- parsing --------------------------------------------------------------- #

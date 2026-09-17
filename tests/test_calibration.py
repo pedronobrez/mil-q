@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from openquant import calibration as cal
+from milq import calibration as cal
 
 
 def points(concentrations, responses, names=None):

@@ -28,7 +28,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 # the offscreen platform finds no fonts on Windows and draws every glyph as
 # a box, which a test measuring ink off a rendered page reads as ink
-from openquant.api import offscreen_fonts
+from milq.api import offscreen_fonts
 
 offscreen_fonts()
 
@@ -41,16 +41,16 @@ from PyQt6 import QtCore, QtWidgets  # noqa: E402
 # macOS ignores setPath and setDefaultFormat applies only to the
 # no-argument constructor, so ui.settings reads this variable instead —
 # set before any widget exists, and inherited by a subprocess.
-os.environ["OPENQUANT_SETTINGS"] = os.path.join(
-    tempfile.mkdtemp(prefix="openquant-test-settings-"), "OpenQuant.ini")
+os.environ["MILQ_SETTINGS"] = os.path.join(
+    tempfile.mkdtemp(prefix="milq-test-settings-"), "MIL-Q.ini")
 
 # And for the same reason, the on-disk cache of averaged spectra: without
 # this the folder route and anything that opens a session would write .npz
-# entries into ~/Library/Caches/OpenQuant, where the next run of the suite
+# entries into ~/Library/Caches/MIL-Q, where the next run of the suite
 # would read them back and a test of a cold measurement would be measuring a
 # warm one. See spectrum_cache.ENV_DIR.
-os.environ["OPENQUANT_CACHE_DIR"] = tempfile.mkdtemp(
-    prefix="openquant-test-cache-")
+os.environ["MILQ_CACHE_DIR"] = tempfile.mkdtemp(
+    prefix="milq-test-cache-")
 
 
 # A widget left to the collector on Windows is torn down by Qt after its
@@ -106,12 +106,12 @@ def _settle_qt():
 #: new one cannot forget and start failing CI, where there is no data at all.
 #: They run when asked for, by either route:
 #:
-#:     OPENQUANT_REAL_DATA=1 pytest -q tests/real
+#:     MILQ_REAL_DATA=1 pytest -q tests/real
 #:     pytest -q -m real
 #:
 #: and are skipped otherwise. Each one also skips itself, naming the path it
 #: looked for, when its own files are absent — see tests/real/data.py.
-REAL_DATA = "OPENQUANT_REAL_DATA"
+REAL_DATA = "MILQ_REAL_DATA"
 REAL_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "real")
 
 

@@ -8,9 +8,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore
 
-from openquant import lipidmaps
-from openquant.chemistry import ADDUCTS_BY_NAME
-from openquant.lipidmaps import LipidDatabase, LipidRecord
+from milq import lipidmaps
+from milq.chemistry import ADDUCTS_BY_NAME
+from milq.lipidmaps import LipidDatabase, LipidRecord
 
 
 @pytest.fixture
@@ -119,7 +119,7 @@ def qapp():
 
 @pytest.fixture
 def panel(qapp, database, monkeypatch):
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     monkeypatch.setattr(lipidmaps, "database", lambda *a, **k: database)
     monkeypatch.setattr(lipidmaps, "is_installed", lambda *a, **k: True)
@@ -199,7 +199,7 @@ def test_nothing_is_adopted_when_the_index_is_already_there(tmp_path,
 
 def test_the_neutral_entry_is_not_offered_as_an_ion(database):
     """It exists so a neutral mass can be searched, and it is not an ion."""
-    from openquant.chemistry import NEUTRAL
+    from milq.chemistry import NEUTRAL
 
     record = database.find_by_name("Cer(d18:1/16:0)")[0]
     assert NEUTRAL not in [f.adduct for f in lipidmaps.ion_forms(record)]
@@ -217,8 +217,8 @@ def test_every_panel_can_be_reached_by_name(qapp):
     findable by accident or not at all.
     """
 
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     workspace.resize(1500, 800)
@@ -244,8 +244,8 @@ def test_every_panel_can_be_reached_by_name(qapp):
 
 
 def test_an_unknown_panel_name_reports_rather_than_switching(qapp):
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     assert not workspace.show_panel_named("Nothing")
@@ -258,7 +258,7 @@ def test_the_panel_counts_the_index_without_opening_it(qapp, monkeypatch):
     Printing "49,969 curated structures indexed locally." used to load all
     49,969 of them: 0.84 s and 570 MB of the window's startup.
     """
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     opened = []
     monkeypatch.setattr(lipidmaps, "is_installed", lambda *a, **k: True)
@@ -278,7 +278,7 @@ def test_the_panel_counts_the_index_without_opening_it(qapp, monkeypatch):
 
 def test_an_index_that_will_not_say_how_many_still_says_it_is_there(qapp,
                                                                     monkeypatch):
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq.ui.lipid_panel import LipidPanel
 
     monkeypatch.setattr(lipidmaps, "is_installed", lambda *a, **k: True)
     monkeypatch.setattr(lipidmaps, "record_count", lambda *a, **k: None)

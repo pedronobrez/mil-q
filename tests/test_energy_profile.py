@@ -24,9 +24,9 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.infusion_report import SUMMARY_COLUMNS                # noqa: E402
-from openquant import library as lib                              # noqa: E402
-from openquant.library import (SpectralLibrary, entry_from_spectrum,  # noqa: E402
+from milq.infusion_report import SUMMARY_COLUMNS                # noqa: E402
+from milq import library as lib                              # noqa: E402
+from milq.library import (SpectralLibrary, entry_from_spectrum,  # noqa: E402
                                format_msp, match_profile, parse_msp,
                                profile_of)
 
@@ -347,7 +347,7 @@ def test_a_compound_with_no_records_profiles_to_nothing():
 def an_infusion_row(record_score: float, reverse: float, profile_score: float,
                     energy: float | None = 18.0):
     """One summary row with a record and a profile match, both invented."""
-    from openquant.infusion_report import InfusionReport, InfusionRow
+    from milq.infusion_report import InfusionReport, InfusionRow
 
     library = a_ladder_walk()
     hit = library.search(library.entries[1].mz, library.entries[1].intensity,

@@ -10,12 +10,12 @@ from pathlib import Path
 
 from PyQt6 import QtGui, QtWidgets
 
-from openquant import lipidmaps
-from openquant.lipidmaps import LipidDatabase, LipidRecord
-from openquant.structure import parse_molblock
-from openquant.ui import style
-from openquant.ui.lipid_panel import ROLE_ION, LipidPanel
-from openquant.ui.structure_view import StructureView
+from milq import lipidmaps
+from milq.lipidmaps import LipidDatabase, LipidRecord
+from milq.structure import parse_molblock
+from milq.ui import style
+from milq.ui.lipid_panel import ROLE_ION, LipidPanel
+from milq.ui.structure_view import StructureView
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -175,7 +175,7 @@ def test_the_precursor_window_is_the_isolation_width_not_a_few_ppm(qapp, panel):
     """
     import numpy as np
 
-    from openquant.matching import PRECURSOR_MATCH_DA
+    from milq.matching import PRECURSOR_MATCH_DA
 
     mz = np.array([391.2843, 373.2737, 355.2632])
     intensity = np.array([1000.0, 500.0, 200.0])

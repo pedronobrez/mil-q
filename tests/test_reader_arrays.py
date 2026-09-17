@@ -13,9 +13,9 @@ import array
 import numpy as np
 import pytest
 
-from openquant import mzml
-from openquant.quantify import PeakResult, ResultsSet
-from openquant.wiff import _to_numpy
+from milq import mzml
+from milq.quantify import PeakResult, ResultsSet
+from milq.wiff import _to_numpy
 
 
 # --------------------------------------------------------------------------- #

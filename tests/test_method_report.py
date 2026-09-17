@@ -28,11 +28,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import audit, method_report as mr  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.health import SERIOUS  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq import audit, method_report as mr  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.health import SERIOUS  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.session import Session  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -207,7 +207,7 @@ def test_the_schedule_comes_from_the_method_alone(report):
 
 
 def test_a_batch_moves_the_target_cycle_off_the_round_number():
-    from openquant.sampling import ComponentSampling, SamplingReport
+    from milq.sampling import ComponentSampling, SamplingReport
 
     sampling = SamplingReport(rows=[
         ComponentSampling("SM(d18:1/16:0)", False, found=10, cycle=14.6,
@@ -303,7 +303,7 @@ def test_it_writes_html_that_opens_on_its_own(report, tmp_path):
 
 def test_a_bare_reader_sample_is_accepted_as_well_as_an_entry():
     """The report takes what a script has and what a project has alike."""
-    from openquant.samples import SampleEntry
+    from milq.samples import SampleEntry
 
     sample = Sample()
     entry = SampleEntry(path="/nowhere/x.wiff", sample_index=0,
@@ -320,7 +320,7 @@ def test_a_bare_reader_sample_is_accepted_as_well_as_an_entry():
 # --------------------------------------------------------------------------- #
 def test_the_toolbar_button_writes_a_report_and_records_it(qapp, tmp_path,
                                                            monkeypatch):
-    from openquant.ui.method_workspace import MethodWorkspace
+    from milq.ui.method_workspace import MethodWorkspace
 
     session = Session()
     session.set_components([replace(c) for c in method().components])
@@ -343,7 +343,7 @@ def test_the_toolbar_button_writes_a_report_and_records_it(qapp, tmp_path,
 
 
 def test_the_button_writes_html_when_html_is_chosen(qapp, tmp_path, monkeypatch):
-    from openquant.ui.method_workspace import MethodWorkspace
+    from milq.ui.method_workspace import MethodWorkspace
 
     session = Session()
     session.set_components([replace(c) for c in method().components])
@@ -357,7 +357,7 @@ def test_the_button_writes_html_when_html_is_chosen(qapp, tmp_path, monkeypatch)
 
 
 def test_the_button_says_so_rather_than_writing_an_empty_method(qapp, monkeypatch):
-    from openquant.ui.method_workspace import MethodWorkspace
+    from milq.ui.method_workspace import MethodWorkspace
 
     called = []
     monkeypatch.setattr(

@@ -25,9 +25,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import infusion_report as ir  # noqa: E402
-from openquant import spectrum_cache  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
+from milq import spectrum_cache  # noqa: E402
+from milq.session import Session  # noqa: E402
 from tests.test_infusion_report import _entry  # noqa: E402
 
 
@@ -156,7 +156,7 @@ def test_the_key_moves_with_the_channel_the_range_and_the_switch(tmp_path):
 def test_the_key_moves_with_the_spray_mask(tmp_path):
     """Two masks keeping different scans are two averages, and a mask is
     what `include_unstable` is switching off."""
-    from openquant.infusion import ScanMask
+    from milq.infusion import ScanMask
 
     path = _file(tmp_path)
     rt = np.linspace(0.0, 1.5, 8)
@@ -288,7 +288,7 @@ def test_what_is_stored_is_the_raw_average_and_the_correction_is_applied_on_read
     to the session and is applied afterwards, so turning the switch on does
     not have to re-read anything and cannot poison what was stored.
     """
-    from openquant.recalibrate import LockMass, MassCorrection
+    from milq.recalibrate import LockMass, MassCorrection
 
     entry, channel = _entry()
     path = _file(tmp_path)
@@ -387,7 +387,7 @@ def test_a_file_that_raises_is_one_row_with_the_reason_on_it():
 # the panel, off the window's thread
 # --------------------------------------------------------------------------- #
 def _panel(qapp, *entries):
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.ui.infusions_panel import InfusionsPanel
 
     return InfusionsPanel(_session(*entries))
 
@@ -423,7 +423,7 @@ def test_the_buttons_are_off_while_it_runs(qapp):
         off.append((panel.btn_measure.isEnabled(),
                     panel.btn_report.isEnabled()))
 
-    from openquant.ui.infusion_worker import MeasureTask
+    from milq.ui.infusion_worker import MeasureTask
 
     task = MeasureTask(panel.session, cache=panel.session.averages)
     panel._task = task
@@ -455,7 +455,7 @@ def test_cancel_stops_after_the_file_it_interrupted_and_keeps_the_rows(qapp):
         if panel.table.rowCount() == 1:
             task.cancel()
 
-    from openquant.ui.infusion_worker import MeasureTask
+    from milq.ui.infusion_worker import MeasureTask
 
     task = MeasureTask(panel.session, cache=panel.session.averages)
     panel._task = task
@@ -479,7 +479,7 @@ def test_a_worker_that_raises_is_a_sentence_and_not_a_dead_panel(qapp):
     the dialog up and the buttons off for ever."""
     entry, _c = _entry(name="TESTOL_infusion_A")
     panel = _panel(qapp, entry)
-    from openquant.ui.infusion_worker import MeasureTask
+    from milq.ui.infusion_worker import MeasureTask
 
     class Broken:
         """A session that raises before anything can be grouped — a reader
@@ -511,7 +511,7 @@ def test_nothing_in_the_worker_touches_a_widget():
     """
     import inspect
 
-    from openquant.ui import infusion_worker
+    from milq.ui import infusion_worker
 
     source = inspect.getsource(infusion_worker)
     assert "QtWidgets" not in source

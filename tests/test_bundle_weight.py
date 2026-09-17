@@ -30,7 +30,7 @@ def test_the_bootstrap_does_not_reach_alpharaws_sciex_reader():
     the reason for any failure into a bare False. bootstrap._load_clearcore
     registers the assemblies itself and keeps the original exception.
     """
-    tree = ast.parse((ROOT / "openquant" / "bootstrap.py").read_text())
+    tree = ast.parse((ROOT / "milq" / "bootstrap.py").read_text())
     imported = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -45,7 +45,7 @@ def test_the_bootstrap_does_not_reach_alpharaws_sciex_reader():
 
 
 def test_the_spec_excludes_the_heavy_packages():
-    spec = (ROOT / "packaging" / "openquant.spec").read_text()
+    spec = (ROOT / "packaging" / "milq.spec").read_text()
     excluded = spec[spec.index("excluded = ["):spec.index("analysis = Analysis")]
     for package in HEAVY:
         assert f'"{package}"' in excluded, f"{package} is not excluded from the bundle"
@@ -54,9 +54,9 @@ def test_the_spec_excludes_the_heavy_packages():
 def test_importing_the_app_stays_clear_of_them():
     """The check that actually holds: what a fresh interpreter ends up loading."""
     code = (
-        "import sys, openquant, openquant.bootstrap, openquant.wiff, "
-        "openquant.processing, openquant.lipidmaps, openquant.structure, "
-        "openquant.explain\n"
+        "import sys, milq, milq.bootstrap, milq.wiff, "
+        "milq.processing, milq.lipidmaps, milq.structure, "
+        "milq.explain\n"
         "print(sorted({m.split('.')[0] for m in sys.modules} & "
         f"set({HEAVY!r})))"
     )
@@ -75,7 +75,7 @@ def test_the_sciex_bootstrap_stays_clear_of_them():
     """
     code = (
         "import sys\n"
-        "from openquant import bootstrap\n"
+        "from milq import bootstrap\n"
         "try:\n"
         "    bootstrap.ensure()\n"
         "except Exception as exc:\n"

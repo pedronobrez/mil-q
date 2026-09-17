@@ -8,12 +8,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets
 
-from openquant.components import Component
-from openquant.quantify import PeakResult, ResultsSet
-from openquant.samples import SampleEntry
-from openquant.session import Session
-from openquant.ui import style
-from openquant.ui.analytics import ALL_COMPONENTS, ROLE_NAME
+from milq.components import Component
+from milq.quantify import PeakResult, ResultsSet
+from milq.samples import SampleEntry
+from milq.session import Session
+from milq.ui import style
+from milq.ui.analytics import ALL_COMPONENTS, ROLE_NAME
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +39,7 @@ def loaded_entry(name):
 
 @pytest.fixture
 def workspace(qapp):
-    from openquant.ui.analytics import AnalyticsWorkspace
+    from milq.ui.analytics import AnalyticsWorkspace
 
     session = Session()
     session.set_components([
@@ -139,8 +139,8 @@ def test_one_component_still_shows_every_sample(qapp, workspace):
 @pytest.fixture
 def area(qapp):
     import numpy as np
-    from openquant.ui.chrom_area import ChromatogramArea
-    from openquant.ui.plots import Trace, colour
+    from milq.ui.chrom_area import ChromatogramArea
+    from milq.ui.plots import Trace, colour
 
     host = QtWidgets.QWidget()
     host.setFixedSize(1000, 900)
@@ -166,7 +166,7 @@ def test_a_few_stacked_panes_share_the_height(qapp, area):
 
 
 def test_many_stacked_panes_scroll_instead_of_shrinking(qapp, area):
-    from openquant.ui.chrom_area import MIN_STACKED_PANE
+    from milq.ui.chrom_area import MIN_STACKED_PANE
 
     area.set_traces(area._make(26))
     area.set_stacked(True)
@@ -190,8 +190,8 @@ def test_unstacking_gives_the_height_back(qapp, area):
 
 # -- the channel tree -------------------------------------------------------- #
 def test_collapse_all_folds_the_samples_but_keeps_the_files(qapp):
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     tree = workspace.tree
@@ -219,7 +219,7 @@ def test_the_side_panels_can_be_reopened_from_the_menu(qapp):
     somewhere anyone looks: closing the tree of samples and channels left the
     workspace looking broken with no way back.
     """
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     workspace.show()          # a dock of a hidden window is never "visible"
@@ -245,7 +245,7 @@ def test_the_side_panels_can_be_reopened_from_the_menu(qapp):
 
 def test_the_reopen_actions_work_without_the_menu_open(qapp):
     """They carry shortcuts, which only fire if the window owns the action."""
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     owned = {a.text() for a in workspace.actions()}
@@ -259,7 +259,7 @@ def test_the_workspace_does_not_grow_a_status_bar_of_its_own(qapp):
     the bar. Every message was then printed twice: once in the strip inside
     the tab, once in the shell's own at the bottom of the window.
     """
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.ui.explorer import ExplorerWorkspace
 
     workspace = ExplorerWorkspace(Session())
     seen = []

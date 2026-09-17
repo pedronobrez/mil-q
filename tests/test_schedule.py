@@ -16,13 +16,13 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.components import Component  # noqa: E402
-from openquant.health import WARNING, check_method  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
-from openquant.sampling import ComponentSampling, SamplingReport  # noqa: E402
-from openquant.schedule import (CSV_HEADER, build_schedule, suggested_cycle,  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.health import WARNING, check_method  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
+from milq.sampling import ComponentSampling, SamplingReport  # noqa: E402
+from milq.schedule import (CSV_HEADER, build_schedule, suggested_cycle,  # noqa: E402
                                 write_csv)
-from openquant.samples import SampleEntry  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
 from tests.test_matching import Channel, Sample  # noqa: E402
 
 
@@ -155,8 +155,8 @@ def test_an_acquisition_without_a_survey_is_a_skipped_check_not_a_finding():
 def test_the_dialog_builds_and_rebuilds_on_the_cycle():
     from PyQt6 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    from openquant.session import Session
-    from openquant.ui.schedule_dialog import ScheduleDialog
+    from milq.session import Session
+    from milq.ui.schedule_dialog import ScheduleDialog
 
     session = Session()
     session.method = _method()

@@ -2,7 +2,7 @@
 """Shortcut: python run.py [file.wiff ...]"""
 import sys
 
-from openquant.app import main
+from milq.app import main
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

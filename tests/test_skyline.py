@@ -17,9 +17,9 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import skyline  # noqa: E402
-from openquant.components import Component  # noqa: E402
-from openquant.method import ProcessingMethod  # noqa: E402
+from milq import skyline  # noqa: E402
+from milq.components import Component  # noqa: E402
+from milq.method import ProcessingMethod  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -198,8 +198,8 @@ def test_the_method_workspace_writes_the_list_and_reports_what_is_missing(
     """
     from PyQt6 import QtWidgets
 
-    from openquant.session import Session
-    from openquant.ui.method_workspace import MethodWorkspace
+    from milq.session import Session
+    from milq.ui.method_workspace import MethodWorkspace
 
     session = Session()
     session.set_components([
@@ -218,6 +218,6 @@ def test_the_method_workspace_writes_the_list_and_reports_what_is_missing(
     header, rows = _read(path)
     assert header == skyline.HEADER and len(rows) == 2
     assert said and "1 without a charge" in said[-1]
-    from openquant.ui.help_window import help_page_for
+    from milq.ui.help_window import help_page_for
     assert help_page_for(workspace.btn_skyline) == "export"
     workspace.close()

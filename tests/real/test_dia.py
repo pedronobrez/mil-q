@@ -17,8 +17,8 @@ import os
 import numpy as np
 import pytest
 
-from openquant import infusion, mzml
-from openquant.raw import open_raw
+from milq import infusion, mzml
+from milq.raw import open_raw
 
 from . import data
 
@@ -33,7 +33,7 @@ def files():
 
 def test_all_eight_read_as_chromatography(files):
     """
-    `openquant/infusion.py`'s measured table: eight DIA runs, 24.0 min,
+    `milq/infusion.py`'s measured table: eight DIA runs, 24.0 min,
     482–490 scans, 25 channels, measuring 0.031 – 0.364 on the sample total
     and 0.015 – 0.060 on the strongest channel.
 

@@ -8,10 +8,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from openquant.components import Component
-from openquant.session import Session
-from openquant.ui import style, theme
-from openquant.ui.collapsible import CollapsibleGroup
+from milq.components import Component
+from milq.session import Session
+from milq.ui import style, theme
+from milq.ui.collapsible import CollapsibleGroup
 
 
 @pytest.fixture(scope="module")
@@ -66,7 +66,7 @@ def test_the_theme_is_read_from_the_style_hints_not_the_palette(light, qapp):
 
 
 def test_a_plot_takes_the_new_colours(light, qapp, monkeypatch):
-    from openquant.ui.plots import ChromatogramView
+    from milq.ui.plots import ChromatogramView
 
     view = ChromatogramView()
     assert view.plot.backgroundBrush().color().name() == style.LIGHT["surface"]
@@ -110,9 +110,9 @@ def test_the_fold_state_survives_a_restart(qapp, tmp_path):
 
 
 def test_the_panels_start_folded_so_the_list_has_room(qapp):
-    from openquant.ui.analytics import AnalyticsWorkspace
+    from milq.ui.analytics import AnalyticsWorkspace
 
-    from openquant.ui.settings import settings as make_settings
+    from milq.ui.settings import settings as make_settings
 
     settings = make_settings()   # the suite's own INI file, never the real store
     settings.remove("analytics/integration_open")

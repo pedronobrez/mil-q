@@ -7,7 +7,7 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant.explain_any import (
+from milq.explain_any import (
     MAX_CUTS,
     MAX_LOSSES,
     ROUTE_DATABASE,
@@ -19,8 +19,8 @@ from openquant.explain_any import (
     _rank,
     explain_any,
 )
-from openquant.lipidmaps import LipidDatabase, LipidRecord
-from openquant.structure import parse_molblock
+from milq.lipidmaps import LipidDatabase, LipidRecord
+from milq.structure import parse_molblock
 
 #: triacetin, TG 2:0/2:0/2:0 — the same drawing `test_explain` uses: small
 #: enough to enumerate in a test and a real triacylglycerol, so the ammonium
@@ -91,7 +91,7 @@ def no_installed_database(monkeypatch):
     running it, and a test asserting that the database route was skipped
     passes on a build server and fails on the analyst's laptop.
     """
-    from openquant import lipidmaps
+    from milq import lipidmaps
 
     monkeypatch.setattr(lipidmaps, "database", lambda *a, **k: None)
     monkeypatch.setattr(lipidmaps, "is_installed", lambda *a, **k: False)
@@ -265,7 +265,7 @@ def test_the_adduct_is_identified_once_for_a_formula_two_routes_share(
     The name and the formula come to the same composition, and the survey is
     read and the isotopes scored once — which is the expensive half.
     """
-    from openquant import chemistry
+    from milq import chemistry
 
     calls = []
     real = chemistry.identify_adduct
@@ -287,8 +287,8 @@ def test_the_adduct_is_identified_once_for_a_formula_two_routes_share(
 def _panel(monkeypatch, database):
     from PyQt6 import QtWidgets
 
-    from openquant import lipidmaps
-    from openquant.ui.lipid_panel import LipidPanel
+    from milq import lipidmaps
+    from milq.ui.lipid_panel import LipidPanel
 
     monkeypatch.setattr(lipidmaps, "database", lambda *a, **k: database)
     monkeypatch.setattr(lipidmaps, "is_installed", lambda *a, **k: True)
@@ -300,7 +300,7 @@ def _panel(monkeypatch, database):
 
 def test_the_panel_button_fills_itself_from_the_component_table(monkeypatch,
                                                                database):
-    from openquant.components import Component
+    from milq.components import Component
 
     app, panel = _panel(monkeypatch, database)
     mz, intensity = arrays([(TG_AMMONIUM, 1000.0), (TG_DIACYL, 600.0),
@@ -335,7 +335,7 @@ def test_the_panel_button_fills_itself_from_the_component_table(monkeypatch,
 
 
 def test_clicking_a_route_swaps_the_ranked_table(monkeypatch, database):
-    from openquant.components import Component
+    from milq.components import Component
 
     app, panel = _panel(monkeypatch, database)
     mz, intensity = arrays([(TG_AMMONIUM, 1000.0), (TG_DIACYL, 600.0),

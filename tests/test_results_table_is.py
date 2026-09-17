@@ -8,11 +8,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from openquant.components import Component
-from openquant.quantify import PeakResult, ResultsSet
-from openquant.session import Session
-from openquant.ui import theme
-from openquant.ui.results_table import (
+from milq.components import Component
+from milq.quantify import PeakResult, ResultsSet
+from milq.session import Session
+from milq.ui import theme
+from milq.ui.results_table import (
     FIELD_INDEX, IS_COLUMN, MAX_AUTO_WIDTH, ResultsTable,
 )
 
@@ -96,7 +96,7 @@ def test_choosing_the_same_one_changes_nothing(qapp, table):
 
 def break_the_reference(table):
     """Point a component at a standard nothing answers to, as an import can."""
-    from openquant.quantify import link_internal_standards
+    from milq.quantify import link_internal_standards
     table.session.method.by_name("C16:0-Ceramide").internal_standard = "never typed"
     link_internal_standards(table.session.results, table.session.method)
 
@@ -115,7 +115,7 @@ def test_a_standard_that_no_component_answers_to_is_shown_and_marked(qapp, table
 def test_a_standard_that_was_never_ticked_is_is_marked_too(qapp, table):
     # by_name resolves it, so the ratio is real — but nobody declared it a
     # standard, which is what an imported spreadsheet keeps producing
-    from openquant.quantify import link_internal_standards
+    from milq.quantify import link_internal_standards
     table.session.method.by_name("C17:0 standard").is_internal_standard = False
     link_internal_standards(table.session.results, table.session.method)
     index = cell(table, "C16:0-Ceramide")
@@ -156,7 +156,7 @@ def test_the_fit_is_skipped_when_the_batch_has_not_changed(qapp, table):
 
 
 def test_the_results_carry_the_sample_group(qapp, table):
-    from openquant.samples import SampleEntry
+    from milq.samples import SampleEntry
     entry = SampleEntry("/d/1.wiff", 0, "Injection 1", sample_group="treated")
     table.session.entries = [entry]
     for result in table.session.results:

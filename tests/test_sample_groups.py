@@ -9,14 +9,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtCore, QtWidgets
 
-from openquant.components import Component
-from openquant.quantify import PeakResult, ResultsSet
-from openquant.samples import QC, SampleEntry, UNKNOWN
-from openquant.session import Session
-from openquant.statistics import (
+from milq.components import Component
+from milq.quantify import PeakResult, ResultsSet
+from milq.samples import QC, SampleEntry, UNKNOWN
+from milq.session import Session
+from milq.statistics import (
     GROUP_BY_SAMPLE_GROUP, GROUPINGS, summarise,
 )
-from openquant.ui.samples_workspace import COL, SamplesWorkspace
+from milq.ui.samples_workspace import COL, SamplesWorkspace
 
 
 @pytest.fixture(scope="module")
@@ -158,7 +158,7 @@ def test_groups_keep_the_order_the_batch_introduces_them_in():
 
 # -- two entries must never read the same ------------------------------------ #
 def _entry(path, index=0, sample=None):
-    from openquant.samples import SampleEntry
+    from milq.samples import SampleEntry
 
     return SampleEntry(path=path, sample_index=index,
                        name=os.path.basename(path), sample=sample)
@@ -169,7 +169,7 @@ def test_the_same_acquisition_in_two_formats_is_told_apart():
     Opening a .wiff and its mzML gave two rows called "1" and two traces in
     the legend called "1", with nothing to say which was which.
     """
-    from openquant.samples import shorten_names
+    from milq.samples import shorten_names
 
     entries = [_entry("/data/demo_Sample_01.wiff"),
                _entry("/data/demo_Sample_01.mzML"),
@@ -183,7 +183,7 @@ def test_the_same_acquisition_in_two_formats_is_told_apart():
 
 
 def test_the_same_name_in_two_folders_is_told_apart():
-    from openquant.samples import shorten_names
+    from milq.samples import shorten_names
 
     entries = [_entry("/data/monday/run.wiff"), _entry("/data/tuesday/run.wiff")]
     shorten_names(entries)
@@ -191,7 +191,7 @@ def test_the_same_name_in_two_folders_is_told_apart():
 
 
 def test_several_injections_in_one_file_keep_their_own_names():
-    from openquant.samples import shorten_names
+    from milq.samples import shorten_names
 
     class Sample:
         def __init__(self, name):
@@ -204,7 +204,7 @@ def test_several_injections_in_one_file_keep_their_own_names():
 
 
 def test_when_nothing_distinguishes_them_they_are_numbered():
-    from openquant.samples import shorten_names
+    from milq.samples import shorten_names
 
     entries = [_entry("/data/run.wiff", 0), _entry("/data/run.wiff", 1)]
     shorten_names(entries)

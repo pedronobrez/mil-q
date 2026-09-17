@@ -25,11 +25,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6 import QtWidgets  # noqa: E402
 
-from openquant import infusion_compare as ic  # noqa: E402
-from openquant import infusion_report as ir  # noqa: E402
-from openquant import report as batch_report  # noqa: E402
-from openquant.samples import SampleEntry, shorten_names  # noqa: E402
-from openquant.session import Session  # noqa: E402
+from milq import infusion_compare as ic  # noqa: E402
+from milq import infusion_report as ir  # noqa: E402
+from milq import report as batch_report  # noqa: E402
+from milq.samples import SampleEntry, shorten_names  # noqa: E402
+from milq.session import Session  # noqa: E402
 from tests.test_infusion_report import (FakeChannel, FakeSample,  # noqa: E402
                                         STRAY, _grid, _ions)
 
@@ -325,7 +325,7 @@ def test_the_report_carries_the_comparison_while_it_stands(qapp):
 
 
 def test_the_dialog_shows_the_rows_and_exports_them(qapp, tmp_path):
-    from openquant.ui.infusion_compare_dialog import InfusionCompareDialog
+    from milq.ui.infusion_compare_dialog import InfusionCompareDialog
 
     comparison = ic.compare_infusions(_day(scale=0.5), _day())
     dialog = InfusionCompareDialog(comparison)
@@ -344,7 +344,7 @@ def test_the_dialog_shows_the_rows_and_exports_them(qapp, tmp_path):
 
 
 def test_the_panel_says_so_when_the_reference_holds_no_summary(qapp, tmp_path):
-    from openquant.ui.infusions_panel import InfusionsPanel
+    from milq.ui.infusions_panel import InfusionsPanel
 
     session = Session()
     session.entries.extend([_infusion("CA-d4_TOFMSMS_EAD_22CE_mix1")])

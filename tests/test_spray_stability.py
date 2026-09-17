@@ -15,7 +15,7 @@ after one, and that it leaves an ordinary spray alone — `infusion.average_stab
 of the kept scans when something is — and what the application does with
 both: the pane's title, *Include unstable scans*, and the report's header.
 
-The figures behind the thresholds are in `openquant/infusion.py`.
+The figures behind the thresholds are in `milq/infusion.py`.
 """
 
 import os
@@ -25,11 +25,11 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import infusion_report  # noqa: E402
-from openquant.infusion import (SPRAY_JUMP, SPRAY_RECOVERED,  # noqa: E402
+from milq import infusion_report  # noqa: E402
+from milq.infusion import (SPRAY_JUMP, SPRAY_RECOVERED,  # noqa: E402
                                 STABILITY_WINDOW, ScanMask, average_stable,
                                 mask_for, run_range, stable_scans)
-from openquant.samples import SampleEntry  # noqa: E402
+from milq.samples import SampleEntry  # noqa: E402
 
 from .test_infusion import (FakeChannel, FakeSample, _peak,  # noqa: E402
                             gradient_sample)
@@ -234,8 +234,8 @@ def test_an_unreadable_channel_averages_to_nothing():
 def _explorer(sample):
     from PyQt6 import QtWidgets
 
-    from openquant.session import Session
-    from openquant.ui.explorer import ExplorerWorkspace
+    from milq.session import Session
+    from milq.ui.explorer import ExplorerWorkspace
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     session = Session()

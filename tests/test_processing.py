@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from openquant import processing as pr
+from milq import processing as pr
 
 
 def gaussian(x, centre, sigma, height):

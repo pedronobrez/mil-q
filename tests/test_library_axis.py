@@ -22,8 +22,8 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from openquant import standard_history as sh                    # noqa: E402
-from openquant.library import (CORRECTED_AXIS, INSTRUMENT_AXIS,  # noqa: E402
+from milq import standard_history as sh                    # noqa: E402
+from milq.library import (CORRECTED_AXIS, INSTRUMENT_AXIS,  # noqa: E402
                                PEAK_TOLERANCE_PPM, SpectralLibrary, axis_gap,
                                correction_ppm, entry_from_spectrum, format_msp,
                                parse_msp, provenance_of, recalibration_in,
@@ -278,7 +278,7 @@ def qapp_module():
 
 @pytest.fixture
 def panel(qapp_module, tmp_path):
-    from openquant.ui.library_panel import LibraryPanel
+    from milq.ui.library_panel import LibraryPanel
 
     widget = LibraryPanel()
     path = tmp_path / "own.msp"
@@ -333,7 +333,7 @@ def test_the_axis_matched_search_moves_the_query_and_says_which_axis(panel):
 
 def test_the_history_dialog_offers_the_rewrite_only_where_it_is_the_repair(
         qapp_module):
-    from openquant.ui.standard_history_dialog import StandardHistoryDialog
+    from milq.ui.standard_history_dialog import StandardHistoryDialog
 
     split = a_history(
         a_record(ppm=None, day="2026-01-05", file="a.wiff"),

@@ -17,15 +17,15 @@ from dataclasses import fields
 import numpy as np
 import pytest
 
-from openquant.components import Component, IntegrationParams
-from openquant.method import ProcessingMethod
-from openquant.quantify import (CHANGED, CHANGED_MANUAL, COMPONENT_GONE,
+from milq.components import Component, IntegrationParams
+from milq.method import ProcessingMethod
+from milq.quantify import (CHANGED, CHANGED_MANUAL, COMPONENT_GONE,
                                 NEW_COMPONENT, NEW_SAMPLE, NOT_RECORDED,
                                 SAMPLE_GONE, PeakResult, ResultsSet,
                                 fingerprint, incremental_plan,
                                 integrate_manually, process,
                                 process_incremental)
-from openquant.samples import SampleEntry
+from milq.samples import SampleEntry
 from tests.test_matching import Channel, Sample
 
 STEP = 14.6 / 60.0
@@ -364,7 +364,7 @@ def test_a_cancelled_run_leaves_the_old_rows_and_is_finished_by_the_next():
 def qapp():
     from PyQt6 import QtWidgets
 
-    from openquant.ui import style
+    from milq.ui import style
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     style.apply(app)
@@ -373,8 +373,8 @@ def qapp():
 
 @pytest.fixture
 def workspace(qapp):
-    from openquant.session import Session
-    from openquant.ui.analytics import AnalyticsWorkspace
+    from milq.session import Session
+    from milq.ui.analytics import AnalyticsWorkspace
 
     session = Session()
     method = _method()
@@ -389,7 +389,7 @@ def _select(workspace, name: str) -> bool:
     """Pick a component in the tree, as clicking it does."""
     from PyQt6 import QtWidgets
 
-    from openquant.ui.analytics import ROLE_NAME
+    from milq.ui.analytics import ROLE_NAME
 
     it = QtWidgets.QTreeWidgetItemIterator(workspace.component_tree)
     while it.value():
@@ -401,7 +401,7 @@ def _select(workspace, name: str) -> bool:
 
 
 def test_the_first_press_is_a_full_run_and_the_second_keeps_everything(workspace):
-    from openquant import audit
+    from milq import audit
 
     session = workspace.session
     workspace.process_batch()
@@ -430,7 +430,7 @@ def test_the_status_line_names_what_was_kept_and_what_was_read(workspace):
 
 
 def test_a_method_default_sends_the_button_back_to_a_full_run(workspace):
-    from openquant import audit
+    from milq import audit
 
     session = workspace.session
     workspace.process_batch()

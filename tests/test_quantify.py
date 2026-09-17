@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from openquant.components import Component
-from openquant.method import ProcessingMethod
-from openquant.quantify import (
+from milq.components import Component
+from milq.method import ProcessingMethod
+from milq.quantify import (
     PeakResult,
     ResultsSet,
     XicCache,
@@ -13,7 +13,7 @@ from openquant.quantify import (
     integrate_component,
     process,
 )
-from openquant.samples import SampleEntry
+from milq.samples import SampleEntry
 from tests.test_matching import Channel, Sample
 
 
@@ -85,7 +85,7 @@ def test_changing_the_method_bypasses_the_cache(method):
 
 def test_component_override_bypasses_the_shared_cache_entry(method):
     """Two components on the same channel must not share a conditioned trace."""
-    from openquant.components import IntegrationParams
+    from milq.components import IntegrationParams
 
     entry, channel = make_entry()
     cache = XicCache()
@@ -231,7 +231,7 @@ def _results(analyte=100.0, qualifier=50.0, standard=200.0):
 
 
 def test_area_and_height_ratios():
-    from openquant.quantify import link_internal_standards
+    from milq.quantify import link_internal_standards
     method, results = _method_with_is(), _results()
     link_internal_standards(results, method)
     analyte = results.get("s1", "Analyte")
@@ -242,7 +242,7 @@ def test_area_and_height_ratios():
 
 
 def test_ratio_is_none_when_the_standard_is_missing():
-    from openquant.quantify import link_internal_standards
+    from milq.quantify import link_internal_standards
     method = _method_with_is()
     results = _results(standard=0.0)   # the standard did not integrate
     link_internal_standards(results, method)
@@ -252,7 +252,7 @@ def test_ratio_is_none_when_the_standard_is_missing():
 
 
 def test_response_follows_the_component_setting():
-    from openquant.quantify import link_internal_standards
+    from milq.quantify import link_internal_standards
     method, results = _method_with_is(), _results()
     link_internal_standards(results, method)
     analyte = results.get("s1", "Analyte")
@@ -261,7 +261,7 @@ def test_response_follows_the_component_setting():
 
 
 def test_ion_ratio_passes_within_tolerance():
-    from openquant.quantify import compute_ion_ratios
+    from milq.quantify import compute_ion_ratios
     method, results = _method_with_is(), _results(qualifier=50.0)
     compute_ion_ratios(results, method)
     qualifier = results.get("s1", "Qual")
@@ -280,12 +280,12 @@ def test_ion_ratio_passes_within_tolerance():
 ])
 def test_ion_ratio_grading(measured, expected_grade):
     """Deviation is relative to the expected ratio: 20% passes, 30% is marginal."""
-    from openquant.quantify import ion_ratio_confidence
+    from milq.quantify import ion_ratio_confidence
     assert ion_ratio_confidence(measured, 50.0, 20.0, 30.0) == expected_grade
 
 
 def test_ion_ratio_grading_reaches_the_results():
-    from openquant.quantify import compute_ion_ratios
+    from milq.quantify import compute_ion_ratios
     method = _method_with_is()
     results = _results(qualifier=90.0)     # 90% against an expected 50%
     compute_ion_ratios(results, method)
@@ -293,7 +293,7 @@ def test_ion_ratio_grading_reaches_the_results():
 
 
 def test_ion_ratio_is_not_applicable_without_an_expectation():
-    from openquant.quantify import compute_ion_ratios, ion_ratio_confidence
+    from milq.quantify import compute_ion_ratios, ion_ratio_confidence
     assert ion_ratio_confidence(50.0, None, 20.0, 30.0) == ""
     assert ion_ratio_confidence(None, 50.0, 20.0, 30.0) == ""
     method = _method_with_is()
@@ -306,7 +306,7 @@ def test_ion_ratio_is_not_applicable_without_an_expectation():
 
 
 def test_ion_ratio_needs_both_peaks():
-    from openquant.quantify import compute_ion_ratios
+    from milq.quantify import compute_ion_ratios
     method = _method_with_is()
     results = _results(analyte=0.0)     # the quantifier did not integrate
     compute_ion_ratios(results, method)
@@ -337,7 +337,7 @@ def test_process_fills_ratios_end_to_end():
 
 # --- per-component integration and manual work --------------------------------- #
 def test_integration_defaults_and_overrides():
-    from openquant.components import IntegrationParams
+    from milq.components import IntegrationParams
 
     method = ProcessingMethod()
     component = Component("A", 100.0)
@@ -353,7 +353,7 @@ def test_integration_defaults_and_overrides():
 
 
 def test_apply_integration_to_a_group_copies_rather_than_shares():
-    from openquant.components import IntegrationParams
+    from milq.components import IntegrationParams
 
     method = ProcessingMethod()
     method.replace_all([
@@ -369,7 +369,7 @@ def test_apply_integration_to_a_group_copies_rather_than_shares():
 
 
 def test_manual_integration_marks_the_row_and_uses_the_range(method):
-    from openquant.quantify import integrate_manually
+    from milq.quantify import integrate_manually
 
     entry, _ = make_entry(apex=13.1)
     result = integrate_manually(entry, method.components[0], method, 13.0, 13.2)
@@ -381,7 +381,7 @@ def test_manual_integration_marks_the_row_and_uses_the_range(method):
 
 def test_manual_integration_can_pick_a_range_with_no_peak(method):
     """The operator's boundaries win: no peak finding second-guesses them."""
-    from openquant.quantify import integrate_manually
+    from milq.quantify import integrate_manually
 
     entry, _ = make_entry(apex=13.1)
     result = integrate_manually(entry, method.components[0], method, 12.2, 12.5)
@@ -390,7 +390,7 @@ def test_manual_integration_can_pick_a_range_with_no_peak(method):
 
 
 def test_manual_integration_rejects_a_sliver(method):
-    from openquant.quantify import integrate_manually
+    from milq.quantify import integrate_manually
 
     entry, _ = make_entry()
     result = integrate_manually(entry, method.components[0], method, 13.1, 13.1)
@@ -398,7 +398,7 @@ def test_manual_integration_rejects_a_sliver(method):
 
 
 def test_reprocessing_keeps_manual_rows(method):
-    from openquant.quantify import integrate_manually
+    from milq.quantify import integrate_manually
 
     entry, _ = make_entry()
     first = process([entry], method)
@@ -438,7 +438,7 @@ class NoisyChannel(TracedChannel):
 
 
 def test_noise_region_drives_the_reported_snr(method):
-    from openquant.components import IntegrationParams
+    from milq.components import IntegrationParams
 
     entry = SampleEntry("/d/noisy.wiff", 0, "noisy")
     entry.sample = Sample([NoisyChannel(1, 325.20, 50.0, 330.0, 12.0, 14.0,
@@ -469,7 +469,7 @@ def test_noise_is_measured_over_the_trace_not_the_peak_window(method):
     The retention-time window is mostly peak, so estimating noise inside it
     measures the peak's own slope; both paths take the whole trace instead.
     """
-    from openquant.quantify import extract_xic, integrate_manually
+    from milq.quantify import extract_xic, integrate_manually
 
     entry = SampleEntry("/d/noisy.wiff", 0, "noisy")
     entry.sample = Sample([NoisyChannel(1, 325.20, 50.0, 330.0, 12.0, 14.0,
@@ -481,15 +481,15 @@ def test_noise_is_measured_over_the_trace_not_the_peak_window(method):
     assert automatic.snr == pytest.approx(manual.snr, rel=0.2)
 
     x, y, _ = extract_xic(entry, component, method)
-    from openquant.processing import estimate_noise
-    from openquant.quantify import measured_noise
+    from milq.processing import estimate_noise
+    from milq.quantify import measured_noise
     assert measured_noise(x, y, method.defaults) == pytest.approx(estimate_noise(y))
 
 
 # --- calibration end to end ----------------------------------------------------- #
 def _calibration_setup():
     """Four standards and one unknown, on a clean 2x response."""
-    from openquant.samples import STANDARD, UNKNOWN
+    from milq.samples import STANDARD, UNKNOWN
 
     method = ProcessingMethod()
     method.concentration_unit = "ng/mL"
@@ -510,7 +510,7 @@ def _calibration_setup():
 
 
 def test_curve_is_built_from_the_standards_only():
-    from openquant.quantify import build_calibrations
+    from milq.quantify import build_calibrations
 
     method, entries, results = _calibration_setup()
     curves = build_calibrations(results, entries, method)
@@ -521,7 +521,7 @@ def test_curve_is_built_from_the_standards_only():
 
 
 def test_unknown_reads_back_off_the_curve():
-    from openquant.quantify import apply_calibrations, build_calibrations
+    from milq.quantify import apply_calibrations, build_calibrations
 
     method, entries, results = _calibration_setup()
     curves = build_calibrations(results, entries, method)
@@ -532,7 +532,7 @@ def test_unknown_reads_back_off_the_curve():
 
 
 def test_dilution_factor_multiplies_the_result():
-    from openquant.quantify import apply_calibrations, build_calibrations
+    from milq.quantify import apply_calibrations, build_calibrations
 
     method, entries, results = _calibration_setup()
     entries[4].dilution_factor = 5.0
@@ -543,7 +543,7 @@ def test_dilution_factor_multiplies_the_result():
 
 
 def test_standards_get_an_accuracy():
-    from openquant.quantify import apply_calibrations, build_calibrations
+    from milq.quantify import apply_calibrations, build_calibrations
 
     method, entries, results = _calibration_setup()
     curves = build_calibrations(results, entries, method)
@@ -553,7 +553,7 @@ def test_standards_get_an_accuracy():
 
 
 def test_standard_without_a_concentration_is_skipped():
-    from openquant.quantify import build_calibrations
+    from milq.quantify import build_calibrations
 
     method, entries, results = _calibration_setup()
     entries[0].actual_concentration = None
@@ -561,8 +561,8 @@ def test_standard_without_a_concentration_is_skipped():
 
 
 def test_no_standards_gives_no_curve():
-    from openquant.samples import UNKNOWN
-    from openquant.quantify import build_calibrations
+    from milq.samples import UNKNOWN
+    from milq.quantify import build_calibrations
 
     method, entries, results = _calibration_setup()
     for entry in entries:
@@ -572,7 +572,7 @@ def test_no_standards_gives_no_curve():
 
 def test_excluded_points_survive_a_refit():
     """Refitting must not quietly put back a standard the operator dropped."""
-    from openquant.quantify import build_calibrations
+    from milq.quantify import build_calibrations
 
     method, entries, results = _calibration_setup()
     curves = build_calibrations(results, entries, method)
@@ -584,7 +584,7 @@ def test_excluded_points_survive_a_refit():
 
 
 def test_curve_uses_the_ratio_when_there_is_an_internal_standard():
-    from openquant.quantify import build_calibrations
+    from milq.quantify import build_calibrations
 
     method, entries, results = _calibration_setup()
     method.by_name("Oxy").internal_standard = "IS"
@@ -596,7 +596,7 @@ def test_curve_uses_the_ratio_when_there_is_an_internal_standard():
 
 
 def test_automatic_outlier_removal_runs_on_request():
-    from openquant.quantify import build_calibrations
+    from milq.quantify import build_calibrations
 
     method, entries, results = _calibration_setup()
     results.get(entries[2].key, "Oxy").area *= 3.0     # 25 ng/mL reads triple
@@ -608,7 +608,7 @@ def test_automatic_outlier_removal_runs_on_request():
 
 
 def test_dropping_the_standard_clears_the_ratios_it_produced():
-    from openquant.quantify import link_internal_standards
+    from milq.quantify import link_internal_standards
     method, results = _method_with_is(), _results()
     link_internal_standards(results, method)
     method.by_name("Analyte").internal_standard = "a standard that has no row"

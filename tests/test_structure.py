@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from openquant.chemistry import parse_formula
-from openquant.structure import (
+from milq.chemistry import parse_formula
+from milq.structure import (
     Structure,
     fragments,
     implicit_hydrogens,
@@ -201,7 +201,7 @@ def test_a_negative_ion_is_the_same_arithmetic_the_other_way():
 def test_the_connection_table_is_kept_when_the_sdf_is_read():
     import io
 
-    from openquant.lipidmaps import LipidDatabase, parse_sdf
+    from milq.lipidmaps import LipidDatabase, parse_sdf
 
     sdf = "\n".join([
         molblock([("C", 0, 0), ("C", 1, 0), ("O", 2, 0)],
@@ -235,7 +235,7 @@ def test_the_connection_table_is_kept_when_the_sdf_is_read():
 
 
 def test_a_record_with_no_structure_says_so_rather_than_failing():
-    from openquant.lipidmaps import LipidRecord
+    from milq.lipidmaps import LipidRecord
 
     record = LipidRecord(lm_id="LMX", name="x", abbrev="", formula="C2H6O",
                          exact_mass=46.0)
@@ -297,7 +297,7 @@ def test_explicit_hydrogens_are_folded_into_the_atoms_that_carry_them():
     them are forty pieces that differ from the whole molecule by one
     hydrogen — which a hydrogen shift already covers.
     """
-    from openquant.structure import suppress_hydrogens
+    from milq.structure import suppress_hydrogens
 
     ethanol = parse_molblock(ETHANOL)
     assert suppress_hydrogens(ethanol) is ethanol      # nothing to fold in

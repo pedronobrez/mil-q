@@ -153,12 +153,18 @@ class PeakPanel(pg.PlotWidget):
         self._area_top.setData(dense, curve)
         self._area_base.setData(dense, floor)
 
-    def fence(self, x: np.ndarray, y: np.ndarray) -> None:
+    def fence(self, x: np.ndarray, y: np.ndarray,
+              ceiling: float | None = None) -> None:
         """
         Keep the panel inside its own data, as the Explorer's plots are.
 
         Nothing lies outside a peak's trace, and a panel this small is easy to
-        lose your place in.
+        lose your place in. `ceiling` is the top of the Y axis when the grid
+        shares one — **Same Y** — and it has to reach the fence, because a
+        limit set from this panel's own tallest point is exactly what stops
+        a shared scale from being shown: `setYRange` to the grid's ceiling
+        was clamped straight back to the panel's own, and the switch looked
+        as though it did nothing.
         """
         box = self.getViewBox()
         if not len(x) or not len(y):
@@ -171,6 +177,8 @@ class PeakPanel(pg.PlotWidget):
         x_low, x_high = float(np.min(x[finite])), float(np.max(x[finite]))
         y_low = min(0.0, float(np.min(y[finite])))
         y_high = float(np.max(y[finite]))
+        if ceiling is not None and ceiling > y_high:
+            y_high = float(ceiling)
         if x_high <= x_low or y_high <= y_low:
             return
         head_room = (y_high - y_low) * 0.08
@@ -217,7 +225,8 @@ class PeakPanel(pg.PlotWidget):
 
     def set_data(self, result: PeakResult, x: np.ndarray, y: np.ndarray,
                  expected: tuple[float, float] | None,
-                 internal_standard: tuple[np.ndarray, np.ndarray] | None = None) -> None:
+                 internal_standard: tuple[np.ndarray, np.ndarray] | None = None,
+                 ceiling: float | None = None) -> None:
         self.sample_key = result.sample_key
         found = result.found
         self._curve.setData(x, y, pen=pg.mkPen(FOUND_PEN if found else MISSING_PEN,
@@ -231,7 +240,7 @@ class PeakPanel(pg.PlotWidget):
         else:
             self._band.hide()
             self._clear_area()
-        self.fence(x, y)
+        self.fence(x, y, ceiling)
         if expected is not None:
             self._expected.setRegion(expected)
             self._expected.show()
@@ -469,6 +478,14 @@ class PeakReviewGrid(QtWidgets.QWidget):
 
         for index, panel in enumerate(self._panels):
             self.grid.addWidget(panel, index // columns, index % columns)
+        # a QGridLayout remembers every row and column it has ever had and
+        # shares the space by size hint among them: at 4 x 3 after 3 x 2
+        # the rows measured 291, 197 and 90 pixels. Equal stretch on what
+        # is in use and none on the rest is what "a grid" means.
+        for row in range(max(rows, self.grid.rowCount())):
+            self.grid.setRowStretch(row, 1 if row < rows else 0)
+        for column in range(max(columns, self.grid.columnCount())):
+            self.grid.setColumnStretch(column, 1 if column < columns else 0)
         self.set_page(self._page)
 
     def _link(self, source: PeakPanel, rng) -> None:
@@ -492,70 +509,6 @@ class PeakReviewGrid(QtWidgets.QWidget):
     def _set_show_is(self, enabled: bool) -> None:
         self._show_is = enabled
         self._fill()
-
-    def _show_area(self, x: np.ndarray, y: np.ndarray,
-                   start: float, end: float,
-                   model: GaussianModel | None = None) -> None:
-        """
-        Shade what was integrated: the trace over its straight baseline, or
-        the fitted curve over it when the area came from a fit.
-        """
-        inside = (x >= start) & (x <= end)
-        if inside.sum() < 2:
-            self._clear_area()
-            return
-        xs, ys = x[inside], y[inside]
-        # the same baseline the integration used, so the picture and the
-        # number cannot disagree
-        base = np.linspace(ys[0], ys[-1], xs.size)
-        self._baseline.setData(xs, base)
-        if model is None:
-            self._area_top.setData(xs, np.maximum(ys, base))
-            self._area_base.setData(xs, base)
-            self._model.setData([], [])
-            return
-        reach = MODEL_REACH * model.sigma
-        lo = min(float(xs[0]), model.centre - reach)
-        hi = max(float(xs[-1]), model.centre + reach)
-        dense = np.linspace(lo, hi, 200)
-        slope = (base[-1] - base[0]) / (xs[-1] - xs[0]) if xs[-1] > xs[0] else 0.0
-        floor = base[0] + slope * (dense - xs[0])
-        curve = model.evaluate(dense) + floor
-        self._model.setData(dense, curve)
-        self._area_top.setData(dense, curve)
-        self._area_base.setData(dense, floor)
-
-    def fence(self, x: np.ndarray, y: np.ndarray) -> None:
-        """
-        Keep the panel inside its own data, as the Explorer's plots are.
-
-        Nothing lies outside a peak's trace, and a panel this small is easy to
-        lose your place in.
-        """
-        box = self.getViewBox()
-        if not len(x) or not len(y):
-            box.setLimits(xMin=None, xMax=None, yMin=None, yMax=None,
-                          maxXRange=None, maxYRange=None)
-            return
-        finite = np.isfinite(x) & np.isfinite(y)
-        if not finite.any():
-            return
-        x_low, x_high = float(np.min(x[finite])), float(np.max(x[finite]))
-        y_low = min(0.0, float(np.min(y[finite])))
-        y_high = float(np.max(y[finite]))
-        if x_high <= x_low or y_high <= y_low:
-            return
-        head_room = (y_high - y_low) * 0.08
-        box.setLimits(xMin=x_low, xMax=x_high,
-                      yMin=y_low, yMax=y_high + head_room,
-                      maxXRange=x_high - x_low,
-                      maxYRange=y_high - y_low + head_room)
-
-    def _clear_area(self) -> None:
-        self._area_top.setData([], [])
-        self._area_base.setData([], [])
-        self._baseline.setData([], [])
-        self._model.setData([], [])
 
     def set_manual_mode(self, enabled: bool) -> None:
         """Dragging inside a panel marks the integration range instead of panning."""
@@ -622,7 +575,9 @@ class PeakReviewGrid(QtWidgets.QWidget):
         for panel, item in zip(self._panels, page_items):
             result, x, y, expected = item[:4]
             is_trace = item[4] if len(item) > 4 and self._show_is else None
-            panel.set_data(result, x, y, expected, is_trace)
+            panel.set_data(result, x, y, expected, is_trace,
+                           ceiling=ceiling * 1.05 if self._shared_y and ceiling > 0
+                           else None)
             panel.set_noise_region(self._noise_region)
             panel.set_selected(result.sample_key == self._selected)
             panel.enableAutoRange()

@@ -191,14 +191,20 @@ def test_an_intel_mac_gets_a_build_of_its_own():
     """
     A bundle is the interpreter and every compiled extension for the machine
     that built it, and there is no cross compilation for this — so an Intel
-    Mac needs its own runner. `macos-13` is the Intel one; `macos-latest` is
-    Apple Silicon.
+    Mac needs its own runner. `macos-15-intel` is the Intel one;
+    `macos-latest` is Apple Silicon. GitHub does not refuse a label it no
+    longer has — `macos-13` was retired and a job asking for it sat queued
+    for forty minutes — so the label is asserted against the list of the
+    ones that exist today, not merely for looking like an Intel one.
     """
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
     package = workflow.index("  package:")
     matrix = workflow.index("os: [", package)
     line = workflow[matrix:workflow.index("\n", matrix)]
-    assert "macos-13" in line and "macos-latest" in line, line
+    intel = {"macos-15-intel", "macos-26-intel"}       # actions/runner-images, 2026-09
+    assert any(label in line for label in intel), f"no Intel runner in {line}"
+    assert "macos-13" not in line, "macos-13 is retired and queues forever"
+    assert "macos-latest" in line, line
     assert "windows-latest" in line and "ubuntu-latest" in line, line
     # the disk image is named from `uname -m`, which is what keeps the two
     # macOS builds from overwriting each other on the release

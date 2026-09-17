@@ -1709,9 +1709,14 @@ nearly two thirds of it macOS, which bills at ten times a Linux minute
 
 - a push to `main` runs **Linux only** — about 6 billable minutes
 - macOS and Windows run on a pull request, on a tag, and on request. A tag
-  packages on **four** runners, not three: `macos-13` is the Intel Mac and
-  `macos-latest` the Apple Silicon one, and a bundle is the interpreter and
-  every compiled extension for the machine that built it. That second macOS
+  packages on **four** runners, not three: `macos-15-intel` is the Intel
+  Mac and `macos-latest` the Apple Silicon one, and a bundle is the
+  interpreter and every compiled extension for the machine that built it.
+  **A label GitHub no longer offers is not refused, it is queued forever**:
+  `macos-13` was the Intel runner until it was retired, and the first
+  v1.0.2 build sat in the queue for forty minutes before anyone looked at
+  `actions/runner-images`'s README, which is where the labels that exist
+  today are listed (`macos-15-intel` and `macos-26-intel` for x64). That second macOS
   runner is the expensive line on the bill — macOS is ten times a Linux
   minute — and it is the price of an Intel build. `make_dmg.sh` names the
   disk image from `uname -m`, so the two do not collide, and the artefact

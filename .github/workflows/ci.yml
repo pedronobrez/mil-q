@@ -195,13 +195,17 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
-      # `macos-13` is the Intel runner and `macos-latest` the Apple Silicon
-      # one: a bundle is the interpreter and every compiled extension for the
-      # machine that built it, and there is no cross compilation for this.
-      # `make_dmg.sh` names the disk image from `uname -m`, so the two do
-      # not collide.
+      # `macos-15-intel` is the Intel runner and `macos-latest` the Apple
+      # Silicon one: a bundle is the interpreter and every compiled extension
+      # for the machine that built it, and there is no cross compilation for
+      # this. `make_dmg.sh` names the disk image from `uname -m`, so the two
+      # do not collide. The older of the two Intel images on purpose: a
+      # bundle runs on the macOS it was built on and newer, and the Intel
+      # Macs still in use are the older ones. A label GitHub no longer has
+      # (`macos-13`, retired) is not refused — it is queued forever, which
+      # is how the first v1.0.2 build spent forty minutes.
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
 
     steps:
       - uses: actions/checkout@v4

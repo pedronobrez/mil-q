@@ -1716,7 +1716,15 @@ nearly two thirds of it macOS, which bills at ten times a Linux minute
   `macos-13` was the Intel runner until it was retired, and the first
   v1.0.2 build sat in the queue for forty minutes before anyone looked at
   `actions/runner-images`'s README, which is where the labels that exist
-  today are listed (`macos-15-intel` and `macos-26-intel` for x64). That second macOS
+  today are listed (`macos-15-intel` and `macos-26-intel` for x64). And
+  the Intel build's first real failure was upstream's: **numba no longer
+  publishes x86_64 wheels for macOS**, pip took the newest source release
+  and died building llvmlite without LLVM. numba is nothing to this
+  application — alpharaw declares it for readers we never import, and the
+  spec has excluded it since 0.6 — so the package job installs alpharaw
+  `--no-deps` and names the real dependencies itself. Proved before it
+  was shipped: a fresh venv with alpharaw and no numba, pandas, h5py or
+  pyarrow opens a `.wiff` through `--selftest`. That second macOS
   runner is the expensive line on the bill — macOS is ten times a Linux
   minute — and it is the price of an Intel build. `make_dmg.sh` names the
   disk image from `uname -m`, so the two do not collide, and the artefact

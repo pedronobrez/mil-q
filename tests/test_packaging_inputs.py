@@ -250,3 +250,25 @@ def test_windows_gets_a_portable_archive_as_well_as_an_installer():
         assert listing in workflow, f"the archive is missing from: {listing}"
     assert workflow.count("built=(dist/*.dmg dist/*.msi dist/*.zip"
                           " dist/*.tar.gz)") == 2
+
+
+def test_the_build_installs_alpharaw_without_its_dependencies():
+    """
+    numba stopped publishing x86_64 wheels for macOS, and the Intel build
+    of v1.0.2 died trying to compile llvmlite for a package this
+    application never imports. alpharaw carries the SCIEX assemblies and
+    one small module that finds them; its declared dependencies serve
+    readers the spec has excluded since the first release.
+    """
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    package = workflow[workflow.index("  package:"):]
+    install = package[package.index("name: Install"):package.index("name: Build")]
+    assert "pip install --no-deps alpharaw" in install
+    assert "pip install --no-deps -e ." in install, (
+        "without --no-deps on the package, pip walks alpharaw's requirements again")
+    # the application's own dependencies, named in full: what pyproject
+    # declares minus alpharaw, plus the packager
+    for name in ("numpy", "PyQt6", "pyqtgraph", "pythonnet", "certifi", "pyinstaller"):
+        assert name in install, f"{name} is no longer installed for the build"
+    spec = (ROOT / "packaging" / "milq.spec").read_text()
+    assert '"numba", "llvmlite"' in spec, "the bundle should still exclude them"

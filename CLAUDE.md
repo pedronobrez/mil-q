@@ -1746,7 +1746,12 @@ allowance — the second macOS runner added roughly a twentieth of the month
 per release.
 
 **Releasing is one command.** `git tag -a vX.Y.Z -m "…" && git push origin
-vX.Y.Z`. Bump `milq/__init__.py` in the same commit — `pyproject` and the
+vX.Y.Z`. **Moving a tag leaves its release behind as a draft**: deleting a
+tag on GitHub does not delete the release attached to it, it detaches it,
+and v1.0.2 was moved twice before its Intel build passed — two drafts named
+"MIL-Q v1.0.2" sat beside the real one until `gh api` found them by
+`draft == true` and deleted them by id (`gh release delete` takes a tag
+name, which all three shared). Look for them after every retag. Bump `milq/__init__.py` in the same commit — `pyproject` and the
 PyInstaller spec read it from there, and a tag whose version disagrees with the
 package produces installers named after the wrong one.
 

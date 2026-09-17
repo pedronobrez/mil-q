@@ -36,8 +36,8 @@
          IconFile is passed in as an absolute path: a relative SourceFile
          resolves against the working directory, not against this file, and
          WIX0103 "cannot find the Icon file" was the first build's answer. -->
-    <Icon Id="MIL-QIcon" SourceFile="$(IconFile)" />
-    <Property Id="ARPPRODUCTICON" Value="MIL-QIcon" />
+    <Icon Id="MilqIcon" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="MilqIcon" />
 
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="INSTALLFOLDER" Name="MIL-Q" />
@@ -62,11 +62,11 @@
 
     <ComponentGroup Id="Shortcuts" Directory="ShortcutFolder">
       <Component Id="StartMenuShortcut" Guid="*">
-        <Shortcut Id="MIL-QShortcut"
+        <Shortcut Id="MilqShortcut"
                   Name="MIL-Q"
                   Target="[INSTALLFOLDER]MIL-Q.exe"
                   WorkingDirectory="INSTALLFOLDER"
-                  Icon="MIL-QIcon" />
+                  Icon="MilqIcon" />
         <RemoveFolder Id="RemoveShortcutFolder" Directory="ShortcutFolder"
                       On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\MIL-Q"

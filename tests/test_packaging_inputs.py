@@ -81,15 +81,15 @@ def test_the_windows_installer_names_the_icon_for_the_shortcut_and_the_programs_
     root = ET.parse(WXS).getroot()
     ns = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
     icon = root.find(".//w:Icon", ns)
-    assert icon is not None and icon.get("Id") == "MIL-QIcon"
+    assert icon is not None and icon.get("Id") == "MilqIcon"
     assert icon.get("SourceFile") == "$(IconFile)"
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
     assert 'IconFile="$PWD\\packaging\\icons\\MIL-Q.ico"' in workflow
     assert (ICONS / "MIL-Q.ico").is_file()
     arp = root.find(".//w:Property[@Id='ARPPRODUCTICON']", ns)
-    assert arp is not None and arp.get("Value") == "MIL-QIcon"
+    assert arp is not None and arp.get("Value") == "MilqIcon"
     shortcut = root.find(".//w:Shortcut", ns)
-    assert shortcut.get("Icon") == "MIL-QIcon"
+    assert shortcut.get("Icon") == "MilqIcon"
 
 
 def test_the_linux_launcher_entry_is_complete_and_travels_with_the_tarball():
@@ -162,3 +162,25 @@ def test_the_bundle_keeps_the_dock_icon_to_itself(monkeypatch):
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     assert not app_module._bundled_on_macos()
+
+
+def test_every_identifier_in_the_installer_is_one_wix_will_accept():
+    """
+    An `Id` is not a name, and the rename did not know the difference.
+
+    `OpenQuantIcon` became `MIL-QIcon` in the pass that renamed everything,
+    and WiX takes A-Za-z0-9 with underscores and periods and nothing else:
+    the v1.0.0 tag built two installers of three and said
+    "'MIL-QIcon' is not a legal identifier" on the Windows runner, minutes
+    into a release. The test above asserts the identifier *by name*, so it
+    was renamed along with the file and agreed with it. This asserts the
+    shape instead, which no rename can satisfy by accident.
+    """
+    legal = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
+    root = ET.parse(ROOT / "packaging" / "milq.wxs").getroot()
+    bad = [(element.tag.rsplit("}", 1)[-1], value)
+           for element in root.iter()
+           for attribute, value in element.attrib.items()
+           if attribute in ("Id", "Icon", "Directory", "WorkingDirectory")
+           and not legal.match(value)]
+    assert not bad, f"WiX will refuse these: {bad}"

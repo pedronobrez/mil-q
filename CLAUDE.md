@@ -1492,7 +1492,19 @@ UV detector, is not implemented there) — untested on real Windows.
   169 files — was one scripted pass with four historical statements held
   back by sentinel, because "renamed to OpenQuant from OpenPeakView" in
   the 0.6.1 row is a fact about the past and rewriting it would have made
-  the record lie.
+  the record lie. **And one thing the pass got wrong, which is the reason
+  to distrust a blanket rename:** an `Id` is not a name. `OpenQuantIcon`
+  and `OpenQuantShortcut` in the WiX source became `MIL-QIcon` and
+  `MIL-QShortcut`, and a WiX identifier takes `A-Za-z0-9_.` and nothing
+  else — so the v1.0.0 tag built two installers of three and failed on the
+  Windows runner with "not a legal identifier", minutes into a release.
+  The test that reads the installer source asserted the identifier *by
+  name*, so the rename changed the test too and it agreed with the broken
+  file; `test_every_identifier_in_the_installer_is_one_wix_will_accept`
+  asserts the **shape** instead, which no rename satisfies by accident.
+  Anywhere a name doubles as an identifier is where to look first next
+  time: the hyphen in MIL-Q is legal in a window title, a plist value and
+  a `.desktop` field, and illegal in a WiX `Id`.
 - **A `.wiff` without its `.wiff.scan` opens and looks whole.** The method,
   the metadata and every channel's TIC are in the `.wiff`; the scans are
   not, so the first spectrum throws, and so do BPC, XIC, the contour and

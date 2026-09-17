@@ -17,7 +17,8 @@ Every release on GitHub carries three files; what came in each one is in
 |---|---|---|
 | `MIL-Q-<version>-macos-arm64.dmg` | macOS on Apple Silicon | drag the application to Applications |
 | `MIL-Q-<version>-macos-x86_64.dmg` | macOS on Intel | the same, built on an Intel machine |
-| `MIL-Q-<version>.msi` | Windows 10 1703 or newer | a standard installer |
+| `MIL-Q-<version>-windows-x64.msi` | Windows 10 1703 or newer | a standard installer |
+| `MIL-Q-<version>-windows-x64.zip` | Windows 10 1703 or newer | no installation: unpack it anywhere and run `MIL-Q\MIL-Q.exe`. For a machine whose administrator will not run an installer — a shared one in a library, say. It is the same folder the installer puts down, and nothing is written outside it except the preferences and `~/.milq` |
 | `MIL-Q-<version>-linux-x86_64.tar.gz` | Linux | unpack and run `MIL-Q/MIL-Q`; `MIL-Q/install.sh` adds a launcher entry |
 | `SHA256SUMS` | all of them | one line per installer; `shasum -a 256 -c SHA256SUMS` checks the download |
 

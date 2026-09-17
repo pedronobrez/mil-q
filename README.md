@@ -9,9 +9,10 @@ across every sample at once, calibration curves and grouped statistics.
 
 Developed and used on **macOS (Apple Silicon included)**. The suite and the
 application both start on Linux and Windows in CI, and installers are built
-for macOS on Apple Silicon and on Intel, for Windows and for Linux — four
-disk images and archives, each carrying the application icon, published with
-a `SHA256SUMS` taken over the files the release serves. The Linux tarball
+for macOS on Apple Silicon and on Intel, for Windows as an installer and as
+a portable archive that needs none, and for Linux — five files, each carrying
+the application icon, published with a `SHA256SUMS` taken over what the
+release serves. The Linux tarball
 includes an `install.sh` that adds a launcher entry. Reading a `.wiff` has
 only ever been done on macOS, though:
 that path loads SCIEX's .NET assemblies, and CI can only report that the

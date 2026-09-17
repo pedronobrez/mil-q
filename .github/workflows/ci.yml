@@ -265,6 +265,20 @@ jobs:
             -d IconFile="$PWD\packaging\icons\MIL-Q.ico" `
             -o "dist/MIL-Q-$version-windows-x64.msi"
 
+      # The same folder the MSI wraps, zipped: unpack it anywhere and run
+      # MIL-Q.exe. A machine whose administrator will not let an installer
+      # run — a shared library computer, say — can still be given the
+      # application this way, and nothing is written outside the folder
+      # except the preferences and ~/.milq.
+      - name: Portable archive
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path milq/__init__.py `
+            -Pattern '__version__ = "([^"]+)"').Matches.Groups[1].Value
+          Compress-Archive -Path dist/MIL-Q -DestinationPath `
+            "dist/MIL-Q-$version-windows-x64.zip" -CompressionLevel Optimal
+
       - name: Tarball
         if: runner.os == 'Linux'
         run: |
@@ -283,7 +297,7 @@ jobs:
         shell: bash
         run: |
           shopt -s nullglob
-          built=(dist/*.dmg dist/*.msi dist/*.tar.gz)
+          built=(dist/*.dmg dist/*.msi dist/*.zip dist/*.tar.gz)
           [ ${#built[@]} -gt 0 ] || { echo "nothing was built" >&2; exit 1; }
           status=0
           for file in "${built[@]}"; do
@@ -301,6 +315,7 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.msi
+            dist/*.zip
             dist/*.tar.gz
           if-no-files-found: error
 
@@ -315,7 +330,7 @@ jobs:
           # each runner has only its own installer, and whichever of the three
           # arrives first is the one that creates the release
           shopt -s nullglob
-          built=(dist/*.dmg dist/*.msi dist/*.tar.gz)
+          built=(dist/*.dmg dist/*.msi dist/*.zip dist/*.tar.gz)
           [ ${#built[@]} -gt 0 ] || { echo "nothing was built" >&2; exit 1; }
           gh release create "${GITHUB_REF_NAME}" --generate-notes --verify-tag \
             --title "MIL-Q ${GITHUB_REF_NAME}" 2>/dev/null || true
@@ -347,7 +362,8 @@ jobs:
           mkdir -p assets
           cd assets
           gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
-            --pattern '*.dmg' --pattern '*.msi' --pattern '*.tar.gz'
+            --pattern '*.dmg' --pattern '*.msi' --pattern '*.zip' \
+            --pattern '*.tar.gz'
           # named rather than globbed, so the file being written is not summed
           sha256sum MIL-Q-* > SHA256SUMS
           cat SHA256SUMS

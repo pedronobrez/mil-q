@@ -225,3 +225,22 @@ def test_the_release_carries_a_list_of_checksums():
     assert "gh release download" in job, "sum what the release serves"
     assert "sha256sum MIL-Q-*" in job, "a glob would sum the file being written"
     assert "gh release upload" in job and "SHA256SUMS" in job
+
+
+def test_windows_gets_a_portable_archive_as_well_as_an_installer():
+    """
+    A shared machine whose administrator will not run an installer can still
+    be given the application: the archive is the same folder the MSI wraps.
+    """
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    assert "name: Portable archive" in workflow
+    step = workflow[workflow.index("name: Portable archive"):]
+    assert "Compress-Archive" in step[:600]
+    assert "windows-x64.zip" in step[:600]
+    # and it has to travel with the rest: the emptiness check, the artefact,
+    # the release upload and the checksums all have to know the extension
+    for listing in ("built=(dist/*.dmg dist/*.msi dist/*.zip dist/*.tar.gz)",
+                    "dist/*.zip", "--pattern '*.zip'"):
+        assert listing in workflow, f"the archive is missing from: {listing}"
+    assert workflow.count("built=(dist/*.dmg dist/*.msi dist/*.zip"
+                          " dist/*.tar.gz)") == 2

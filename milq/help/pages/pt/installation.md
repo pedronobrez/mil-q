@@ -17,7 +17,8 @@ delas está no [[version-history]]:
 |---|---|---|
 | `MIL-Q-<version>-macos-arm64.dmg` | macOS em Apple Silicon | arraste a aplicação para Applications |
 | `MIL-Q-<version>-macos-x86_64.dmg` | macOS em Intel | o mesmo, compilado numa máquina Intel |
-| `MIL-Q-<version>.msi` | Windows 10 1703 ou mais recente | um instalador padrão |
+| `MIL-Q-<version>-windows-x64.msi` | Windows 10 1703 ou mais recente | um instalador padrão |
+| `MIL-Q-<version>-windows-x64.zip` | Windows 10 1703 ou mais recente | sem instalação: descompacte em qualquer lugar e execute `MIL-Q\MIL-Q.exe`. Para uma máquina cujo administrador não deixa correr um instalador — uma partilhada numa biblioteca, por exemplo. É a mesma pasta que o instalador deixa, e nada é escrito fora dela a não ser as preferências e o `~/.milq` |
 | `MIL-Q-<version>-linux-x86_64.tar.gz` | Linux | descompacte e execute `MIL-Q/MIL-Q`; o `MIL-Q/install.sh` acrescenta uma entrada no lançador |
 | `SHA256SUMS` | todos | uma linha por instalador; `shasum -a 256 -c SHA256SUMS` confere o download |
 

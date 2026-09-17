@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 1.0.0 released. 1936 tests. Public repository.**
+**Version 1.0.1 released. 1940 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -1695,15 +1695,29 @@ nearly two thirds of it macOS, which bills at ten times a Linux minute
 (Windows at two). So:
 
 - a push to `main` runs **Linux only** — about 6 billable minutes
-- macOS and Windows run on a pull request, on a tag, and on request
+- macOS and Windows run on a pull request, on a tag, and on request. A tag
+  packages on **four** runners, not three: `macos-13` is the Intel Mac and
+  `macos-latest` the Apple Silicon one, and a bundle is the interpreter and
+  every compiled extension for the machine that built it. That second macOS
+  runner is the expensive line on the bill — macOS is ten times a Linux
+  minute — and it is the price of an Intel build. `make_dmg.sh` names the
+  disk image from `uname -m`, so the two do not collide, and the artefact
+  is named for the **runner** rather than `runner.os`, which is "macOS" for
+  both of them
+- a tag's last job is `checksums`: it waits for every packaging runner,
+  downloads the assets back **off the release** and publishes `SHA256SUMS`
+  beside them. Off the release rather than out of the build because they
+  are the same bytes and only one of them is what a person downloads
 - the `.NET bootstrap` check runs **weekly**, on a tag, or on request; it
   asks whether SCIEX's assemblies still load, which does not depend on
   anything committed here
 - markdown, `docs/` and the licence start nothing
 - only the newest run for a ref finishes
 
-A tag runs everything and publishes the three installers. Estimated: 40 pushes,
-2 releases and 4 weeks come to about 20% of the allowance.
+A tag runs everything and publishes four installers and their checksums.
+Estimated: 40 pushes, 2 releases and 4 weeks come to about 25% of the
+allowance — the second macOS runner added roughly a twentieth of the month
+per release.
 
 **Releasing is one command.** `git tag -a vX.Y.Z -m "…" && git push origin
 vX.Y.Z`. Bump `milq/__init__.py` in the same commit — `pyproject` and the
@@ -1728,7 +1742,7 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-1936 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+1940 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
 `tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so

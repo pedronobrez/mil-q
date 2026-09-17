@@ -16,11 +16,20 @@ Every release on GitHub carries three files; what came in each one is in
 | File | Platform | Notes |
 |---|---|---|
 | `MIL-Q-<version>-macos-arm64.dmg` | macOS on Apple Silicon | drag the application to Applications |
+| `MIL-Q-<version>-macos-x86_64.dmg` | macOS on Intel | the same, built on an Intel machine |
 | `MIL-Q-<version>.msi` | Windows 10 1703 or newer | a standard installer |
 | `MIL-Q-<version>-linux-x86_64.tar.gz` | Linux | unpack and run `MIL-Q/MIL-Q`; `MIL-Q/install.sh` adds a launcher entry |
+| `SHA256SUMS` | all of them | one line per installer; `shasum -a 256 -c SHA256SUMS` checks the download |
+
+The two disk images are not interchangeable: a bundle is the interpreter and
+every compiled extension for the machine that built it, so the Apple Silicon
+one will not start on an Intel Mac or the other way about. `uname -m` says
+which machine you have — `arm64` or `x86_64`. The sums are taken over the
+files the release serves, after they are uploaded, rather than over what came
+out of the build.
 
 The application icon — the suite's mark, a white peak with a blue neighbour —
-is on all three: the macOS bundle carries it as `MIL-Q.icns`, the Windows
+is on all of them: the macOS bundles carry it as `MIL-Q.icns`, the Windows
 executable carries it in its resources (checked by reading them back from
 the built installer: the same six images as the `.ico`, 16 to 256 pixels)
 and the Start menu entry and *Add or remove programs* name it, and the Linux

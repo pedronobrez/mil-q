@@ -184,3 +184,44 @@ def test_every_identifier_in_the_installer_is_one_wix_will_accept():
            if attribute in ("Id", "Icon", "Directory", "WorkingDirectory")
            and not legal.match(value)]
     assert not bad, f"WiX will refuse these: {bad}"
+
+
+# -- what a release serves -------------------------------------------------- #
+def test_an_intel_mac_gets_a_build_of_its_own():
+    """
+    A bundle is the interpreter and every compiled extension for the machine
+    that built it, and there is no cross compilation for this — so an Intel
+    Mac needs its own runner. `macos-13` is the Intel one; `macos-latest` is
+    Apple Silicon.
+    """
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    package = workflow.index("  package:")
+    matrix = workflow.index("os: [", package)
+    line = workflow[matrix:workflow.index("\n", matrix)]
+    assert "macos-13" in line and "macos-latest" in line, line
+    assert "windows-latest" in line and "ubuntu-latest" in line, line
+    # the disk image is named from `uname -m`, which is what keeps the two
+    # macOS builds from overwriting each other on the release
+    assert "$(uname -m)" in (ROOT / "packaging" / "make_dmg.sh").read_text()
+
+
+def test_two_mac_runners_do_not_share_one_artefact_name():
+    """`runner.os` is "macOS" on both of them, so the runner is what names it."""
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    assert "name: milq-${{ matrix.os }}" in workflow
+    assert "name: milq-${{ runner.os }}" not in workflow
+
+
+def test_the_release_carries_a_list_of_checksums():
+    """
+    Published beside the installers, and taken over what the release serves
+    rather than over what the build produced: the same bytes, but only one of
+    them is what a person downloads.
+    """
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    assert "\n  checksums:\n" in workflow, "no job publishes the sums"
+    job = workflow[workflow.index("\n  checksums:\n"):]
+    assert "needs: package" in job, "the sums must wait for every installer"
+    assert "gh release download" in job, "sum what the release serves"
+    assert "sha256sum MIL-Q-*" in job, "a glob would sum the file being written"
+    assert "gh release upload" in job and "SHA256SUMS" in job

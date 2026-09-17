@@ -16,8 +16,17 @@ delas está no [[version-history]]:
 | Arquivo | Plataforma | Observações |
 |---|---|---|
 | `MIL-Q-<version>-macos-arm64.dmg` | macOS em Apple Silicon | arraste a aplicação para Applications |
+| `MIL-Q-<version>-macos-x86_64.dmg` | macOS em Intel | o mesmo, compilado numa máquina Intel |
 | `MIL-Q-<version>.msi` | Windows 10 1703 ou mais recente | um instalador padrão |
 | `MIL-Q-<version>-linux-x86_64.tar.gz` | Linux | descompacte e execute `MIL-Q/MIL-Q`; o `MIL-Q/install.sh` acrescenta uma entrada no lançador |
+| `SHA256SUMS` | todos | uma linha por instalador; `shasum -a 256 -c SHA256SUMS` confere o download |
+
+As duas imagens de disco não são intercambiáveis: um bundle é o interpretador
+e cada extensão compilada para a máquina que o construiu, portanto a de Apple
+Silicon não arranca num Mac Intel nem o contrário. O `uname -m` diz que
+máquina você tem — `arm64` ou `x86_64`. As somas são calculadas sobre os
+ficheiros que a release serve, depois de publicados, e não sobre o que saiu
+da compilação.
 
 O ícone da aplicação — a marca da suíte, um pico branco com um vizinho azul —
 está nos três: o bundle do macOS o carrega como `MIL-Q.icns`, o

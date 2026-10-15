@@ -13,7 +13,8 @@ import os
 
 from PyQt6 import QtCore
 
-from .audit import PROJECT_SAVED, RECALIBRATION, AuditTrail
+from .audit import (PROJECT_SAVED, RAW_FILES_RELOCATED, RECALIBRATION,
+                    AuditTrail)
 from .components import Component
 from .matching import components_from_sample, match_channel
 from .calibration import Calibration
@@ -26,6 +27,107 @@ PROJECT_SUFFIX = ".oqproj"
 #: the suffix used before the software was renamed; still opened, never written
 LEGACY_PROJECT_SUFFIX = ".opvproj"
 PROJECT_SUFFIXES = (PROJECT_SUFFIX, LEGACY_PROJECT_SUFFIX)
+
+
+
+# -- a project carried to another computer ----------------------------------- #
+def raw_name(path: str) -> str:
+    """The file name of a saved path, whichever system wrote it: a project
+    saved on Windows is read on a Mac, where `os.path.basename` does not
+    split on a backslash."""
+    return str(path).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
+
+
+def _complete(path: str) -> bool:
+    """There, and with its companion when it has one: a `.wiff` without its
+    `.wiff.scan` opens and then fails on the first spectrum."""
+    if not os.path.isfile(path):
+        return False
+    if path.lower().endswith(".wiff"):
+        return os.path.isfile(path + ".scan")
+    return True
+
+
+def locate_raw_files(paths, folder: str) -> dict[str, str]:
+    """
+    Where each missing raw file is in `folder`, by name: the folder itself
+    first, then its immediate subfolders — where only one of them holds the
+    name, since two copies of one name are a choice this cannot make.
+    Returns {saved path: found path} for the ones found.
+    """
+    if not folder or not os.path.isdir(folder):
+        return {}
+    try:
+        subfolders = sorted(
+            os.path.join(folder, name) for name in os.listdir(folder)
+            if not name.startswith(".")
+            and os.path.isdir(os.path.join(folder, name)))
+    except OSError:
+        subfolders = []
+    found: dict[str, str] = {}
+    for path in paths:
+        name = raw_name(path)
+        if not name:
+            continue
+        here = os.path.join(folder, name)
+        if _complete(here):
+            found[path] = here
+            continue
+        below = [os.path.join(sub, name) for sub in subfolders
+                 if _complete(os.path.join(sub, name))]
+        if len(below) == 1:
+            found[path] = below[0]
+    return found
+
+
+def _relocated(value, relocate: dict[str, str]):
+    """`value` with every saved path in `relocate` replaced, as a whole
+    string or as the front of a sample key (`path|index`) — the path is in
+    the key of every result and every pinned spectrum, not only in the
+    sample list."""
+    if isinstance(value, str):
+        if value in relocate:
+            return relocate[value]
+        head, bar, tail = value.rpartition("|")
+        if bar and head in relocate:
+            return relocate[head] + bar + tail
+        return value
+    if isinstance(value, list):
+        return [_relocated(item, relocate) for item in value]
+    if isinstance(value, dict):
+        return {_relocated(key, relocate): _relocated(item, relocate)
+                for key, item in value.items()}
+    return value
+
+
+def _missing_paths(data: dict) -> list[str]:
+    seen: list[str] = []
+    for row in data.get("samples", []):
+        path = str(row.get("path", ""))
+        if path and path not in seen and not os.path.exists(path):
+            seen.append(path)
+    return seen
+
+
+def plan_relocation(project_path: str, relocate: dict[str, str] | None = None
+                    ) -> tuple[dict[str, str], list[str]]:
+    """
+    Read a project without opening anything and say which raw files are not
+    where it last saw them. Those found by name in the project's own folder
+    are added to `relocate`; returns (relocate, still missing).
+    """
+    with open(project_path, encoding="utf-8") as handle:
+        data = json.load(handle)
+    return _plan(data, project_path, relocate)
+
+
+def _plan(data: dict, project_path: str, relocate: dict[str, str] | None
+          ) -> tuple[dict[str, str], list[str]]:
+    relocate = dict(relocate or {})
+    missing = [path for path in _missing_paths(data) if path not in relocate]
+    relocate.update(locate_raw_files(
+        missing, os.path.dirname(os.path.abspath(project_path))))
+    return relocate, [path for path in missing if path not in relocate]
 
 
 class Session(QtCore.QObject):
@@ -396,14 +498,27 @@ class Session(QtCore.QObject):
         self.project_path = path
         self._mark_clean()
 
-    def load_project(self, path: str) -> list[str]:
+    def load_project(self, path: str,
+                     relocate: dict[str, str] | None = None) -> list[str]:
         """
         Restore a project. Returns the paths of raw files that could not be
         reopened, so the caller can tell the user which ones are missing rather
         than silently dropping their batch information.
+
+        `relocate` maps a saved raw-file path to where the file is now, and a
+        file missing from its saved path is also looked for by name beside
+        the project (`plan_relocation`). Every occurrence is rewritten — the
+        sample list, and the sample keys of the results and the pinned
+        spectra — except in the audit trail, which records what was.
         """
         with open(path, encoding="utf-8") as handle:
             data = json.load(handle)
+        relocate, _ = _plan(data, path, relocate)
+        relocate = {old: new for old, new in relocate.items() if old != new}
+        if relocate:
+            audit = data.pop("audit", None)
+            data = _relocated(data, relocate)
+            data["audit"] = audit
 
         self.close_all()
         self.method = ProcessingMethod.from_dict(data.get("method", {}))
@@ -441,6 +556,9 @@ class Session(QtCore.QObject):
         # likewise absent from every project written before this existed,
         # which loads with an empty trail rather than an invented one
         self.audit = AuditTrail.from_dict(data.get("audit"))
+        for old, new in relocate.items():
+            self.audit.record(RAW_FILES_RELOCATED, raw_name(new),
+                              before=old, after=new)
         # absent from every project written before this existed, and from
         # every project whose Infusions tab was never asked to measure —
         # which is not an error, and is why nothing is invented for it
@@ -460,4 +578,7 @@ class Session(QtCore.QObject):
         # reading it out of its file again, which needs the file open
         self.sigViewRestored.emit()
         self._mark_clean()
+        if relocate:
+            # the new paths are worth keeping, and only a save keeps them
+            self._mark_dirty()
         return missing

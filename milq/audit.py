@@ -69,6 +69,9 @@ OWN_LIBRARY = "Own library"
 #: naming all three, because they are one act. See ui/new_standard_dialog.py
 NEW_STANDARD = "New standard"
 PROJECT_SAVED = "Project saved"
+#: raw files found somewhere other than where the project last saw them —
+#: a project carried to another computer. See session.load_project
+RAW_FILES_RELOCATED = "Raw files relocated"
 
 EVENTS: tuple[str, ...] = (
     MANUAL_INTEGRATION, AUTOMATIC_INTEGRATION, ROW_USED, CALIBRATION_POINT,
@@ -77,6 +80,7 @@ EVENTS: tuple[str, ...] = (
     NAME_RENAMED, METHOD_DEFAULT,
     SAMPLE_EDITED,
     PROCESSED, REPROCESSED,
+    RAW_FILES_RELOCATED,
     RECALIBRATION, INFUSION_REPORT, METHOD_REPORT, INFUSION_QUANTITATION,
     OWN_LIBRARY, NEW_STANDARD, PROJECT_SAVED,
 )

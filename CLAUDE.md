@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 1.0.2 released. 1944 tests. Public repository.**
+**Version 1.0.3 prepared. 1948 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -1533,6 +1533,18 @@ UV detector, is not implemented there) — untested on real Windows.
   and an XIC or an integration reports it as the row's note. The probe is
   the only way to know: nothing in the `.wiff` says the companion is
   absent.
+- **A raw file's path is in every key, so moving it is a rewrite, not an
+  edit.** A project carried to another computer points at the first one's
+  folders, and the path is not only in `samples` — `SampleEntry.key` is
+  `path|index`, which is every result's `sample_key` and every pin's.
+  `load_project(path, relocate)` rewrites the JSON before it is read
+  (`session._relocated`: a whole string or the front of a key), everywhere
+  except `audit`, which records what was; one `Raw files relocated` entry per
+  file and the project left dirty. `plan_relocation` finds a missing file by
+  name beside the project without asking, and `locate_raw_files` searches a
+  folder and its direct subfolders — a name in two subfolders is not
+  guessed, a `.wiff` counts only with its `.wiff.scan`, and `raw_name`
+  splits on `\\` too, because `os.path.basename` on a Mac does not.
 - **Pinned spectra are traces after the live one.** `explorer.pin_spectrum`
   copies the live trace (`key == "spec"`) with the pane's title as its
   label and appends it; `_with_pins` keeps the live one first, so every
@@ -1773,7 +1785,7 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-1944 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+1948 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
 `tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so

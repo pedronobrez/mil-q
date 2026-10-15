@@ -26,8 +26,37 @@ opens — measured on those two infusions, 5.9 s against the 3.2 s the files
 take to open — and a pin whose file has moved stays in the list marked *not
 available: file missing* rather than being dropped without a word.
 
-A file that has moved is reported by name when the project opens, and the
-project opens without it; see [[starting-a-project]].
+## Opening a project on another computer
+
+A project records where each raw file was, as a full path, and a project
+copied to another computer still points at the first one's folders. Nothing
+has to be edited by hand to bring the two together again:
+
+- **Beside the project first.** A raw file missing from its saved path is
+  looked for by name in the project's own folder and in the folders directly
+  inside it. Copy the project and its data together and it opens without a
+  question.
+- **Otherwise the window asks.** *Raw files not found* lists what is
+  missing, with **Locate folder…**, **Open without them** and **Cancel**.
+  The folder chosen is searched the same way — itself, then the folders
+  directly inside it — and the question comes back with whatever is still
+  missing, so a batch spread over several folders is found one folder at a
+  time.
+- **By name, whichever system saved it.** A path written on Windows
+  (`C:\Data\run01.wiff`) is found on a Mac and the other way round. A `.wiff`
+  counts as found only with its `.wiff.scan` beside it, and a name held by two
+  subfolders is left for you to choose rather than guessed.
+
+The results, the hand integrations, the pinned spectra and the infusion
+summary stay attached to their samples: the path is part of every sample's
+key, and all of them are rewritten together. The [[audit-trail]] gains one
+*Raw files relocated* line per file, old path before, new path after, and the
+project is marked unsaved — **save it** and the next opening on this computer
+asks nothing. A file still missing is reported by name and the project opens
+without it; see [[starting-a-project]].
+
+In a script, `Batch.from_project(path, raw_folder=…)` does the same search
+without asking; see [[python-api]].
 
 ## What sits beside a project
 

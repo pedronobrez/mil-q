@@ -838,15 +838,22 @@ class Batch:
 
     # -- making one -------------------------------------------------------- #
     @classmethod
-    def from_project(cls, path) -> "Batch":
+    def from_project(cls, path, raw_folder=None) -> "Batch":
         """
         Open a saved project — `.oqproj` — with its raw files.
 
         Raw files that have moved are not an error: they are listed in
         `missing`, and everything the project itself holds is still there.
+        A raw file is also looked for by name beside the project and, given
+        `raw_folder`, in that folder and the folders directly inside it.
         """
+        from .session import locate_raw_files, plan_relocation
+
         batch = cls()
-        missing = batch.session.load_project(os.fspath(path))
+        relocate, left = plan_relocation(os.fspath(path))
+        if raw_folder is not None:
+            relocate.update(locate_raw_files(left, os.fspath(raw_folder)))
+        missing = batch.session.load_project(os.fspath(path), relocate)
         batch.missing = tuple(missing or ())
         batch.project = os.fspath(path)
         return batch

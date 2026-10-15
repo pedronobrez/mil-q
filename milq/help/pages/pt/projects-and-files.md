@@ -28,8 +28,37 @@ novo quando o projeto abre — medido nessas duas infusões, 5,9 s contra os
 lugar permanece na lista marcado como *not available: file missing* em vez de
 ser descartado sem uma palavra.
 
-Um arquivo que mudou de lugar é reportado pelo nome quando o projeto abre, e
-o projeto abre sem ele; ver [[starting-a-project]].
+## Abrir um projeto em outro computador
+
+Um projeto registra onde estava cada arquivo bruto, como caminho completo, e
+um projeto copiado para outro computador continua apontando para as pastas do
+primeiro. Nada precisa ser editado à mão para juntar os dois de novo:
+
+- **Primeiro, ao lado do projeto.** Um arquivo bruto ausente do caminho
+  salvo é procurado pelo nome na pasta do próprio projeto e nas pastas
+  imediatamente dentro dela. Copie o projeto e os dados juntos e ele abre sem
+  nenhuma pergunta.
+- **Senão, a janela pergunta.** *Raw files not found* lista o que falta, com
+  **Locate folder…**, **Open without them** e **Cancel**. A pasta escolhida é
+  examinada da mesma forma — ela própria e depois as pastas imediatamente
+  dentro dela — e a pergunta volta com o que ainda faltar, de modo que um
+  lote espalhado por várias pastas é encontrado uma pasta de cada vez.
+- **Pelo nome, qualquer que seja o sistema que salvou.** Um caminho escrito
+  no Windows (`C:\Data\run01.wiff`) é encontrado num Mac e vice-versa. Um
+  `.wiff` só conta como encontrado com o seu `.wiff.scan` ao lado, e um nome
+  presente em duas subpastas fica para você escolher em vez de ser
+  adivinhado.
+
+Os resultados, as integrações manuais, os espectros fixados e o resumo das
+infusões continuam ligados às suas amostras: o caminho faz parte da chave de
+cada amostra, e todos são reescritos juntos. A [[audit-trail]] ganha uma linha
+*Raw files relocated* por arquivo, com o caminho antigo antes e o novo depois,
+e o projeto fica marcado como não salvo — **salve-o** e a próxima abertura
+neste computador não pergunta nada. Um arquivo que continue faltando é
+reportado pelo nome e o projeto abre sem ele; ver [[starting-a-project]].
+
+Num script, `Batch.from_project(path, raw_folder=…)` faz a mesma busca sem
+perguntar; ver [[python-api]].
 
 ## O que fica ao lado de um projeto
 

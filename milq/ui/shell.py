@@ -13,7 +13,8 @@ import os
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 from .. import raw
-from ..session import LEGACY_PROJECT_SUFFIX, PROJECT_SUFFIX, Session
+from ..session import (LEGACY_PROJECT_SUFFIX, PROJECT_SUFFIX, Session,
+                       locate_raw_files, plan_relocation)
 from . import style, theme
 from .settings import settings
 from .analytics import AnalyticsWorkspace
@@ -726,18 +727,97 @@ class MainShell(QtWidgets.QMainWindow):
             "All files (*)")
         if not path:
             return
-        self.explorer.clear_views()
+        self.load_project_file(path)
+
+    #: what the missing-files question can be answered with
+    LOCATE, CONTINUE, CANCEL = "locate", "continue", "cancel"
+
+    def load_project_file(self, path: str) -> bool:
+        """Open a project, asking where its raw files are when they are not
+        where it last saw them. False when the person cancelled or the
+        project could not be read."""
         try:
-            missing = self.session.load_project(path)
+            relocate = self.find_raw_files(path)
         except (OSError, ValueError) as exc:
             QtWidgets.QMessageBox.critical(self, "Could not open the project", str(exc))
-            return
+            return False
+        if relocate is None:
+            return False
+        self.explorer.clear_views()
+        try:
+            missing = self.session.load_project(path, relocate)
+        except (OSError, ValueError) as exc:
+            QtWidgets.QMessageBox.critical(self, "Could not open the project", str(exc))
+            return False
         if missing:
             QtWidgets.QMessageBox.warning(
                 self, "Raw files missing",
                 "The batch information was restored, but these files could not "
                 "be opened:\n\n" + "\n".join(sorted(set(missing))))
-        self.statusBar().showMessage(f"Project loaded from {path}")
+        found = len(relocate)
+        self.statusBar().showMessage(
+            f"Project loaded from {path}"
+            + (f" — {found} raw file(s) found in a new place; save to keep it"
+               if found else ""))
+        return True
+
+    def find_raw_files(self, path: str) -> dict[str, str] | None:
+        """
+        {saved path: path now} for the project's raw files, asking for a
+        folder for as long as some are missing and the person wants to look.
+        None when they cancel. Files beside the project are found without
+        asking.
+        """
+        relocate, missing = plan_relocation(path)
+        note = ""
+        while missing:
+            choice = self.ask_about_missing_files(missing, note)
+            if choice == self.CANCEL:
+                return None
+            if choice == self.CONTINUE:
+                break
+            folder = QtWidgets.QFileDialog.getExistingDirectory(
+                self, "Folder holding the raw files",
+                self.settings.value("io/raw_dir", self._last_dir(), type=str))
+            if not folder:
+                continue
+            self.settings.setValue("io/raw_dir", folder)
+            found = locate_raw_files(missing, folder)
+            relocate.update(found)
+            missing = [item for item in missing if item not in found]
+            note = (f"{len(found)} found in {folder}." if found else
+                    f"None of them is in {folder} or the folders directly "
+                    "inside it (a .wiff counts only with its .wiff.scan).")
+        return relocate
+
+    def ask_about_missing_files(self, missing: list[str], note: str = "") -> str:
+        """LOCATE, CONTINUE or CANCEL — a method of its own so that a test
+        can answer it."""
+        box = QtWidgets.QMessageBox(self)
+        box.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        box.setWindowTitle("Raw files not found")
+        shown = missing[:12]
+        more = len(missing) - len(shown)
+        box.setText(
+            f"{len(missing)} raw file(s) of this project are not where it was "
+            "saved — usually because it was moved to another computer.\n\n"
+            "Choose the folder they are in now and they are found by name.")
+        box.setInformativeText(
+            (note + "\n\n" if note else "")
+            + "\n".join(shown) + (f"\n… and {more} more" if more else ""))
+        locate = box.addButton("Locate folder…",
+                               QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        go_on = box.addButton("Open without them",
+                              QtWidgets.QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(QtWidgets.QMessageBox.StandardButton.Cancel)
+        box.setDefaultButton(locate)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is locate:
+            return self.LOCATE
+        if clicked is go_on:
+            return self.CONTINUE
+        return self.CANCEL
 
     def save_project(self) -> bool:
         """Save without asking once the project has a file of its own."""

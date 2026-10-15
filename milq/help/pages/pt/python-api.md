@@ -30,7 +30,7 @@ são dataclasses simples e arrays numpy.
 | | |
 |---|---|
 | `api.open(path)` | uma amostra de um `.wiff` ou de um `.mzML`: `samples`, `channels`, `tic()`, `spectrum(scan)`, `average(rt0, rt1)`, `xic(mz)`, `is_infusion`, `infusion_average()` |
-| `api.Batch` | `from_project(path)`, ou arquivos e uma tabela de componentes; depois `process()`, `results`, `calibrate()`, `statistics()`, `export_xlsx()`, `report()`, `save_project()` |
+| `api.Batch` | `from_project(path, raw_folder=None)`, ou arquivos e uma tabela de componentes; depois `process()`, `results`, `calibrate()`, `statistics()`, `export_xlsx()`, `report()`, `save_project()` |
 | `api.explain(spectrum, …)` | o que uma fórmula, um nome ou um molfile explica de um espectro |
 | `api.Library` | `open(msp)`, `search(spectrum)`, `add(spectrum, name)` |
 | `api.infusion_report(source, out)` | o documento de infusão direta de um arquivo, de uma pasta ou de uma amostra |

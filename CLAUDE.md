@@ -1544,7 +1544,7 @@ UV detector, is not implemented there) — untested on real Windows.
   name beside the project without asking, and `locate_raw_files` searches a
   folder and its direct subfolders — a name in two subfolders is not
   guessed, a `.wiff` counts only with its `.wiff.scan`, and `raw_name`
-  splits on `\\` too, because `os.path.basename` on a Mac does not.
+  splits on `\` too, because `os.path.basename` on a Mac does not.
 - **Pinned spectra are traces after the live one.** `explorer.pin_spectrum`
   copies the live trace (`key == "spec"`) with the pane's title as its
   label and appends it; `_with_pins` keeps the live one first, so every

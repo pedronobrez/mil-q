@@ -33,6 +33,7 @@ What is drawn on a found peak:
 | light band | the expected retention-time window, RT ± half-width |
 | orange curve | the fitted Gaussian, when the area came from a fit — the shading then sits under the curve, because the curve's area is the number. See [[integration-algorithms]] |
 | red dashed trace | the internal standard, with **Show IS** on |
+| red axis on the right | the internal standard's own counts — the dashed trace is drawn at the analyte's height, so read it against this axis, never the left one. Left out when the panel is too small for the time axis's numbers |
 | grey band | the noise region, when one is set |
 
 ## Controls
@@ -41,7 +42,7 @@ What is drawn on a found peak:
 |---|---|
 | **Columns** and **Rows** | the grid's shape; paging appears when the batch is larger than a page. The panels are kept and re-placed rather than rebuilt, so a change of shape is immediate and does not resize the window — see [[workspaces]]. Every row is the same height and every column the same width at any shape and wherever the splitter above the results is dragged; the empty cells of a short last page keep their place. No panel asks for a size of its own, so the grid never pushes the results pane away |
 | **Manual** | dragging across a panel integrates exactly that range (Shift+drag does the same without the switch) |
-| **Show IS** | draw the internal standard behind the analyte, rescaled to the analyte's height where the panel looks — the two rarely share a magnitude, and only the shape and the time are being compared |
+| **Show IS** | draw the internal standard behind the analyte, rescaled to the analyte's height where the panel looks — the two rarely share a magnitude, and only the shape and the time are being compared. Its own counts are on the red axis at the right, and hovering a panel gives the standard's name, area and height — the numbers the ratio was taken against — and the factor the trace was drawn at |
 | **Same Y** | one intensity scale across the panels, so heights compare directly. The scale is the tallest point any panel *shows* — inside its zoom, not over the whole run, so a tall neighbour minutes away on one channel does not flatten every peak — and it holds across every page of the component, through a change of **Columns** or **Rows**, **Show IS**, a manual integration and a resize. Zooming one panel's intensity zooms them all. Under *All components* the pages are built one at a time, so there the scale is the page's |
 | **Zoom** | *Expected window*, tight on the *Peak*, or the *Whole run* |
 | **Link X** | zooming one panel zooms them all |

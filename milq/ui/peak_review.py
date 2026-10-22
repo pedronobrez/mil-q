@@ -192,7 +192,8 @@ class PeakPanel(pg.PlotWidget):
         super().__init__(parent, background=theme.background(),
                          viewBox=self.viewbox,
                          axisItems={"bottom": _PanelAxis("bottom"),
-                                    "left": _PanelAxis("left")})
+                                    "left": _PanelAxis("left"),
+                                    "right": _PanelAxis("right")})
         self.sample_key = ""
         self.showGrid(x=True, y=True, alpha=0.12)
         self.setMenuEnabled(False)
@@ -217,6 +218,17 @@ class PeakPanel(pg.PlotWidget):
         self._title = ("", "", [], theme.foreground())  # name, note, parts, colour
         self._type: tuple | None = None   # (title pt, tick pt, values shown)
         self._top = 0.0                   # the highest value the Y axis labels
+        #: what the internal standard was multiplied by to be drawn at the
+        #: analyte's height; None when no standard is drawn
+        self._is_scale: float | None = None
+        # the standard's own counts, in its colour, on the right: the dashed
+        # trace is drawn at the analyte's height, and read against the left
+        # axis a standard of 80,000 counts looked like one of 20
+        right = self.getAxis("right")
+        right.setPen(pg.mkPen(IS_PEN))
+        right.setTextPen(pg.mkPen(IS_PEN))
+        right.unlinkFromView()      # its range is set from the left's
+        self.hideAxis("right")
 
         self._curve = self.plot([], [], pen=pg.mkPen(FOUND_PEN, width=1.3))
         self._is_curve = self.plot(
@@ -262,6 +274,7 @@ class PeakPanel(pg.PlotWidget):
         self._noise.hide()
         self.addItem(self._noise, ignoreBounds=True)
         self.viewbox.sigRangeDrag.connect(self._on_drag)
+        self.viewbox.sigYRangeChanged.connect(self._sync_is_axis)
         self.set_selected(False)
 
     def _show_area(self, x: np.ndarray, y: np.ndarray,
@@ -364,7 +377,8 @@ class PeakPanel(pg.PlotWidget):
     def clear_panel(self) -> None:
         self.sample_key = ""
         self._curve.setData([], [])
-        self._is_curve.setData([], [])
+        self._set_internal_standard(np.empty(0), None)
+        self.setToolTip("")
         self._band.hide()
         self._expected.hide()
         self._clear_area()
@@ -416,8 +430,36 @@ class PeakPanel(pg.PlotWidget):
         else:
             self._title = (result.sample_name, result.note or "not found", [],
                            "#e06666" if theme.is_dark() else "#b03030")
+        self.setToolTip(self._tooltip(result))
         self._type = None
         self._fit_type()
+
+    def _tooltip(self, result: PeakResult) -> str:
+        """
+        The numbers behind the panel, the standard's in its own counts.
+
+        Its area and height are the ones the ratio was taken against; the
+        drawn trace is the standard multiplied to the analyte's height, which
+        is said too, so the dashed line is never read as a measurement.
+        """
+        lines = [result.sample_name]
+        if result.found:
+            lines.append(f"Area {result.area:,.0f} · height {result.height:,.0f}"
+                         f" · RT {result.rt:.2f} min")
+        else:
+            lines.append(result.note or "not found")
+        if result.internal_standard:
+            area = (f"{result.is_area:,.0f}" if result.is_area is not None
+                    else "—")
+            height = (f"{result.is_height:,.0f}" if result.is_height is not None
+                      else "—")
+            lines.append(f"Internal standard {result.internal_standard}: "
+                         f"area {area} · height {height}")
+            if self._is_scale is not None:
+                lines.append(f"Dashed trace drawn ×{self._is_scale:.3g} to "
+                             f"the analyte's height; its counts are on the "
+                             f"right-hand axis")
+        return "\n".join(lines)
 
     # -- type ------------------------------------------------------------------- #
     def title_text(self) -> str:
@@ -474,7 +516,7 @@ class PeakPanel(pg.PlotWidget):
         title_h = QtGui.QFontMetrics(title_font).height() + 2
         bottom_h = tick_h + 5
         values = height - title_h - bottom_h >= MIN_PLOT_PX
-        wanted = (title_pt, tick_pt, values, width, self._top)
+        wanted = (title_pt, tick_pt, values, width, self._top, self._is_scale)
         if self._type == wanted:
             return
         self._type = wanted
@@ -490,6 +532,17 @@ class PeakPanel(pg.PlotWidget):
         widest = max(metrics.horizontalAdvance(f"{self._top:.0f}"),
                      metrics.horizontalAdvance("0000"))
         left.setWidth(widest + 10)
+        right = self.getAxis("right")
+        right.setStyle(tickFont=tick_font)
+        # with the time axis's numbers gone the panel is too small for a
+        # second scale too; the standard's counts are still in the tooltip
+        if self._is_scale and values:
+            self.showAxis("right")
+            right.setWidth(max(metrics.horizontalAdvance(
+                f"{self._top / self._is_scale:.0f}"),
+                metrics.horizontalAdvance("0000")) + 10)
+        else:
+            self.hideAxis("right")
 
         item = self.getPlotItem()
         name, note, parts, colour = self._title
@@ -571,6 +624,8 @@ class PeakPanel(pg.PlotWidget):
         """
         if trace is None or trace[0].size == 0:
             self._is_curve.setData([], [])
+            self._is_scale = None
+            self.hideAxis("right")
             return
         is_x, is_y = trace
         peak = float(np.max(is_y)) if is_y.size else 0.0
@@ -578,6 +633,17 @@ class PeakPanel(pg.PlotWidget):
                   else float(np.max(y)) if y.size else 0.0)
         scale = target / peak if peak > 0 and target > 0 else 1.0
         self._is_curve.setData(is_x, is_y * scale)
+        self._is_scale = scale
+        self._type = None         # `_fit_type` decides whether the axis fits
+        self._sync_is_axis()
+
+    def _sync_is_axis(self, *_args) -> None:
+        """The right-hand axis is the left one divided by the standard's scale."""
+        if not self._is_scale:
+            return
+        low, high = self.getViewBox().viewRange()[1]
+        self.getAxis("right").setRange(low / self._is_scale,
+                                       high / self._is_scale)
 
     def integration_range(self) -> tuple[float, float] | None:
         """The range currently shaded on this panel, if any."""

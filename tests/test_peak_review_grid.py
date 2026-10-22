@@ -625,3 +625,57 @@ def test_a_long_title_does_not_make_its_panel_wider(qapp, app_font):
     widths = {p.width() for p in grid.views}
     assert max(widths) - min(widths) <= 1, widths
     grid.close()
+
+
+def _items_with_a_standard(count: int, analyte=20.0, standard=80_000.0):
+    """An analyte of 20 counts beside a standard of 80,000, as on PGA2."""
+    x = np.linspace(0.0, 10.0, 120)
+    made = []
+    for index in range(count):
+        y = analyte * np.exp(-((x - 5.0) ** 2) / 0.2)
+        sy = standard * np.exp(-((x - 5.1) ** 2) / 0.2)
+        made.append((PeakResult(sample_key=f"s{index}",
+                                sample_name=f"KO0{index}",
+                                component="PGA2", rt=5.0,
+                                start_rt=4.5, end_rt=5.5, area=12.0,
+                                height=analyte,
+                                internal_standard="PGE2-d4",
+                                is_area=48_000.0, is_height=standard),
+                     x, y, (4.5, 5.5), (x, sy)))
+    return made
+
+
+def test_the_standard_is_read_in_its_own_counts_on_the_right(qapp):
+    grid = _grid(qapp)
+    grid.set_items("PGA2", _items_with_a_standard(4))
+    qapp.processEvents()
+    panel = grid.views[0]
+    right, left = panel.getAxis("right"), panel.getAxis("left")
+    assert right.isVisible()
+    # the dashed trace is drawn at the analyte's height, and the right-hand
+    # axis is the left one divided by what it was multiplied by
+    _xs, drawn = panel._is_curve.getData()
+    assert float(np.max(drawn)) == pytest.approx(20.0, rel=0.05)
+    low, high = right.range
+    assert high == pytest.approx(left.range[1] / panel._is_scale)
+    assert 80_000.0 < high < 90_000.0
+    tip = panel.toolTip()
+    assert "PGE2-d4" in tip and "48,000" in tip and "80,000" in tip
+    assert "right-hand axis" in tip
+
+    # a zoom carries the right-hand axis with it
+    panel.getViewBox().setYRange(0.0, 10.0, padding=0)
+    assert right.range[1] == pytest.approx(10.0 / panel._is_scale)
+
+    grid.chk_is.setChecked(False)
+    qapp.processEvents()
+    assert not panel.getAxis("right").isVisible()
+    assert "right-hand axis" not in panel.toolTip()
+    assert "PGE2-d4" in panel.toolTip()     # the numbers stay, the trace goes
+
+
+def test_a_panel_without_a_standard_has_no_right_hand_axis(qapp):
+    grid = _grid(qapp)
+    grid.set_items("CA-d4", _items(2))
+    qapp.processEvents()
+    assert not grid.views[0].getAxis("right").isVisible()

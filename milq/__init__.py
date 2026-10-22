@@ -1,6 +1,6 @@
 """MIL-Q - open source quantitation for LC-MS data (.wiff, .mzML)."""
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 # Read every OPENQUANT_* as its MILQ_* twin before anything asks for one.
 # Here rather than in each entry point because importing the package is the

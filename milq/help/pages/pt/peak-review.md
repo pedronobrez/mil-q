@@ -34,6 +34,7 @@ O que é desenhado sobre um pico encontrado:
 | faixa clara | a janela esperada de tempo de retenção, RT ± meia largura |
 | curva laranja | a gaussiana ajustada, quando a área veio de um ajuste — o sombreado fica então sob a curva, porque a área da curva é o número. Ver [[integration-algorithms]] |
 | traço tracejado vermelho | o padrão interno, com **Show IS** ligado |
+| eixo vermelho à direita | as contagens do próprio padrão interno — o traço tracejado é desenhado na altura do analito, então leia-o contra este eixo, nunca contra o da esquerda. Some quando o painel é pequeno demais para os números do eixo do tempo |
 | faixa cinza | a região de ruído, quando há uma definida |
 
 ## Controles
@@ -42,7 +43,7 @@ O que é desenhado sobre um pico encontrado:
 |---|---|
 | **Columns** e **Rows** | a forma da grade; a paginação aparece quando o lote é maior que uma página. Os painéis são guardados e recolocados em vez de reconstruídos, pelo que mudar a forma é imediato e não redimensiona a janela — ver [[workspaces]]. Todas as linhas têm a mesma altura e todas as colunas a mesma largura em qualquer forma e onde quer que se arraste o divisor acima dos resultados; as células vazias de uma última página curta guardam o seu lugar. Nenhum painel pede um tamanho próprio, de modo que a grade nunca empurra o painel de resultados |
 | **Manual** | arrastar sobre um painel integra exatamente aquele intervalo (Shift+arrastar faz o mesmo sem a chave) |
-| **Show IS** | desenha o padrão interno atrás do analito, reescalado à altura do analito onde o painel olha — os dois raramente compartilham uma magnitude, e só a forma e o tempo estão sendo comparados |
+| **Show IS** | desenha o padrão interno atrás do analito, reescalado à altura do analito onde o painel olha — os dois raramente compartilham uma magnitude, e só a forma e o tempo estão sendo comparados. As suas contagens estão no eixo vermelho à direita, e passar o mouse sobre um painel dá o nome, a área e a altura do padrão — os números contra os quais a razão foi calculada — e o fator com que o traço foi desenhado |
 | **Same Y** | uma única escala de intensidade em todos os painéis, para que as alturas se comparem diretamente. A escala é o ponto mais alto que algum painel *mostra* — dentro do seu zoom, não na corrida inteira, de modo que um vizinho alto minutos adiante num canal não achata todos os picos — e se mantém em todas as páginas do componente, ao mudar **Columns** ou **Rows**, **Show IS**, numa integração manual e ao redimensionar. Dar zoom na intensidade de um painel dá zoom em todos. Em *All components* as páginas são construídas uma de cada vez, e ali a escala é a da página |
 | **Zoom** | *Expected window*, justo no *Peak*, ou a corrida inteira (*Whole run*) |
 | **Link X** | dar zoom em um painel dá zoom em todos |

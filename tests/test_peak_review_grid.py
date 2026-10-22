@@ -32,8 +32,24 @@ def qapp():
     return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
+#: every grid a test built, closed after it whether or not the test did: a
+#: grid of 64 panels left to the collector was freed in the middle of the
+#: next test's `PlotItem.__init__`, and Python 3.10 on Linux segfaulted there
+_OPEN: list[QtWidgets.QWidget] = []
+
+
+@pytest.fixture(autouse=True)
+def _close_grids():
+    yield
+    while _OPEN:
+        grid = _OPEN.pop()
+        grid.close()
+        grid.deleteLater()
+
+
 def _grid(qapp) -> PeakReviewGrid:
     grid = PeakReviewGrid()
+    _OPEN.append(grid)
     grid.resize(900, 600)
     grid.show()
     qapp.processEvents()
@@ -570,6 +586,7 @@ def test_every_row_and_column_is_the_same_size_however_tight(qapp, columns,
     asking for more in one row had that row stand taller than the rest.
     """
     splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
+    _OPEN.append(splitter)
     grid = PeakReviewGrid()
     splitter.addWidget(grid)
     splitter.addWidget(QtWidgets.QTableWidget(20, 5))

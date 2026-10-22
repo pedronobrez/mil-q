@@ -36,7 +36,8 @@ método sensível parecer pior quanto mais alto fosse seu calibrador de topo. O
 limite é 20%. Blank, Double Blank e Solvent contam todos como brancos; padrões
 internos não são verificados.
 
-A ordem de injeção vem dos tempos de aquisição. Um branco em outro lugar da
+A ordem de injeção é a batch order de [[samples-workspace]] onde está
+preenchida, e os tempos de aquisição caso contrário. Um branco em outro lugar da
 corrida não é este teste e não é reportado como se fosse; e uma corrida sem
 branco após o padrão mais alto volta com *no blank was injected after the
 highest standard; inject one to measure carryover* em vez de um número tirado do

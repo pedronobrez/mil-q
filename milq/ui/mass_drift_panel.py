@@ -14,11 +14,12 @@ import pyqtgraph as pg
 from PyQt6 import QtCore, QtWidgets
 
 from . import theme
-from ..mass_drift import DRIFT_PPM, MassDrift, MassTrend, mass_drift
+from ..mass_drift import DRIFT_PPM, MASS_INDEX, MassDrift, MassTrend, mass_drift
 from ..recalibrate import describe as describe_corrections
 from ..recalibrate import MAX_LOCK_ERROR_PPM, fit_batch, lock_mass_refusal
 from ..session import Session
 from .flow_layout import FlowLayout
+from .point_hover import PointHover, hoverable_scatter, signed
 
 TREND_PEN = "#e08a1e"
 
@@ -32,6 +33,8 @@ class MassDriftPanel(QtWidgets.QWidget):
         super().__init__(parent)
         self.session = session
         self._keys: list[str] = []
+        #: the trend the chart is drawing, for the hover's text
+        self._shown: MassTrend | None = None
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -79,9 +82,11 @@ class MassDriftPanel(QtWidgets.QWidget):
         self._lines: list[pg.InfiniteLine] = []
         self._trend = self.plot.plot([], [], pen=pg.mkPen(
             TREND_PEN, width=1.2, style=QtCore.Qt.PenStyle.DashLine))
-        self._scatter = pg.ScatterPlotItem(size=9, pen=pg.mkPen(theme.axis()))
+        self._scatter = hoverable_scatter()
         self._scatter.sigClicked.connect(self._on_point_clicked)
         self.plot.addItem(self._scatter)
+        self.hover = PointHover(self.plot, self.describe_point)
+        self.hover.attach(self._scatter)
         body.addWidget(self.plot)
 
         self.table = QtWidgets.QTableWidget(0, 9)
@@ -233,9 +238,7 @@ class MassDriftPanel(QtWidgets.QWidget):
             self.status.setText(drift.note)
             return
         said = [f"{drift.injections} injection(s)"]
-        said.append("in acquisition order" if drift.ordered else
-                    f"in the order opened — only {drift.timed} of "
-                    f"{drift.injections} carry an acquisition time")
+        said.append(drift.order)
         measured = drift.measured
         said.append(f"{len(measured)} of {len(drift.trends)} component(s) "
                     f"measured in enough injections")
@@ -299,7 +302,9 @@ class MassDriftPanel(QtWidgets.QWidget):
         self._keys = [point.sample for point in trend.points]
         brushes = [pg.mkBrush(theme.danger() if abs(y) >= DRIFT_PPM else theme.accent())
                    for y in ys]
-        self._scatter.setData(xs, ys, brush=brushes, data=self._keys)
+        self._shown = trend
+        self._scatter.setData(xs, ys, brush=brushes,
+                              data=list(range(len(trend.points))))
         for level, style in ((0.0, QtCore.Qt.PenStyle.SolidLine),
                              (DRIFT_PPM, QtCore.Qt.PenStyle.DashLine),
                              (-DRIFT_PPM, QtCore.Qt.PenStyle.DashLine)):
@@ -316,6 +321,8 @@ class MassDriftPanel(QtWidgets.QWidget):
                            size="9pt", color=theme.foreground())
 
     def _clear_plot(self) -> None:
+        self.hover.reset()
+        self._shown = None
         self._scatter.setData([])
         self._trend.setData([], [])
         for line in self._lines:
@@ -367,9 +374,46 @@ class MassDriftPanel(QtWidgets.QWidget):
         if item is not None:
             self.component.setCurrentText(item.text())
 
+    def describe_point(self, index) -> str:
+        """Which injection a point is, what it measured, and whether it is out."""
+        trend = self._shown
+        if (trend is None or not isinstance(index, int)
+                or not 0 <= index < len(trend.points)):
+            return ""
+        point = trend.points[index]
+        entry = next((e for e in self.session.entries if e.name == point.sample),
+                     None)
+        lines = [point.sample]
+        kind = entry.sample_type if entry is not None else ""
+        group = entry.sample_group if entry is not None else ""
+        if kind or group:
+            lines.append(" · ".join(part for part in (
+                kind, f"group {group}" if group else "") if part))
+        lines.append(f"Point {point.order} of {len(trend.points)} on this chart")
+        if point.when:
+            lines.append(f"Acquired {point.when}")
+        if trend.component == MASS_INDEX:
+            lines.append(f"{signed(point.ppm, 'ppm')} from the run's median, "
+                         f"the median over the standards")
+        else:
+            lines.append(f"m/z {point.mz:.4f}, {signed(point.ppm, 'ppm')} from "
+                         f"the run's median")
+            if point.intensity:
+                lines.append(f"Intensity {point.intensity:,.0f}")
+            if not point.corroborated:
+                lines.append("Not confirmed by the product-ion scan")
+        if abs(point.ppm) >= DRIFT_PPM:
+            lines.append(f"OUT: at least {DRIFT_PPM:g} ppm from the run's median")
+        else:
+            lines.append(f"Within ±{DRIFT_PPM:g} ppm")
+        return "\n".join(lines)
+
     def _on_point_clicked(self, _plot, points) -> None:
         if points:
-            name = points[0].data()
+            index = points[0].data()
+            if not isinstance(index, int) or not 0 <= index < len(self._keys):
+                return
+            name = self._keys[index]
             entry = next((e for e in self.session.entries if e.name == name), None)
             if entry is not None:
                 self.sigSampleActivated.emit(entry.key)

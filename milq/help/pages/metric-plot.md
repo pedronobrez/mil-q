@@ -7,10 +7,11 @@ another column, for one component or all of them.
 
 | Control | Effect |
 |---|---|
-| **X** | *injection order* — the order the instrument ran the samples, from their acquisition times; *row order* — the order of the results table; or any numeric column |
+| **X** | *injection order* — the order the instrument ran the samples, from the batch order where every injection has one, otherwise from their acquisition times; *row order* — the order of the results table; or any numeric column |
 | **Y** | any numeric column: area, height, S/N, area ratio, retention time, ΔRT, calculated concentration, accuracy… |
 | **Component** | one component, or every component overlaid |
 | **Colour by** | *sample group*, *sample type*, or *nothing* — with a legend, and *no group* for samples that have none |
+| hover a point | draws it larger and names it: the sample, its type and group, the component, its injection number (on injection order), both values with their units, and any acceptance flag or exclusion on the row |
 | click a point | selects that row in the [[results-table]] and its panel in the [[peak-review]] grid |
 
 ## Uses

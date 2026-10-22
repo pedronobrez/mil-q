@@ -15,7 +15,7 @@ leaving a hole.
 | Section | Holds |
 |---|---|
 | Summary | rows, samples, components; how many passed, were marginal, failed; excluded rows; and the findings — every failed row with its flags |
-| Samples | the batch table: name, type, group, concentration, dilution, acquisition time |
+| Samples | the batch table: batch order, name, file, type, group, concentration, dilution, comment |
 | Method | the component table, the defaults, and the findings of [[check-method]] |
 | Calibration | each curve's regression, weighting, equation, r², and its standards with accuracies; an internal standard's curve labelled as meaningless |
 | Detection and quantitation limits | LOD and LOQ per component, with the notes of [[detection-limits-and-carryover]] |

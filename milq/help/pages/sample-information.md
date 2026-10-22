@@ -17,7 +17,8 @@ in the [[samples-workspace]] and saved with the project instead.
 
 The acquisition time is what the [[batch-qc]] page and the injection-order
 axis of the [[metric-plot]] use to put the injections in the order the
-instrument ran them.
+instrument ran them, unless a batch order has been typed in the
+[[samples-workspace]], which then takes precedence.
 
 ## Active channel
 

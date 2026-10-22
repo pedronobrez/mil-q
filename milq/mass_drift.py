@@ -33,7 +33,8 @@ from .precursor import CONSENSUS_SPREAD_PPM, PrecursorMeasurement, measure
 from .qc import (DRIFT_CORRELATION, MIN_INJECTIONS, SPIKED_TYPES, _stamp,
                  spearman)
 from .samples import SampleEntry
-from .validation import acquisition_order
+from .validation import (acquisition_order, describe_order, order_counts,
+                         order_is_known)
 
 #: a fitted change across the run, in ppm, beyond which the axis drifted
 #: rather than wandered. A TripleTOF holds a few ppm on a strong ion; ten
@@ -141,10 +142,17 @@ class MassDrift:
     injections: int = 0
     timed: int = 0
     note: str = ""
+    #: injections given a batch order in the Samples table
+    numbered: int = 0
 
     @property
     def ordered(self) -> bool:
-        return self.injections > 0 and self.timed == self.injections
+        return order_is_known(self.injections, self.numbered, self.timed)
+
+    @property
+    def order(self) -> str:
+        """What the sequence rests on, as a phrase: `in batch order`, …"""
+        return describe_order(self.injections, self.numbered, self.timed)
 
     @property
     def drifted(self) -> list[MassTrend]:
@@ -260,8 +268,8 @@ def mass_drift(entries: list[SampleEntry], method: ProcessingMethod,
     is then None rather than half a batch presented as a whole.
     """
     ordered = [e for e in acquisition_order(entries) if e.is_loaded]
-    report = MassDrift(injections=len(ordered),
-                       timed=sum(1 for entry in ordered if _stamp(entry)))
+    numbered, timed = order_counts(ordered)
+    report = MassDrift(injections=len(ordered), timed=timed, numbered=numbered)
     if not ordered:
         report.note = "no samples are open"
         return report

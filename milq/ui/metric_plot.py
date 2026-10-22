@@ -11,11 +11,13 @@ from ..validation import acquisition_order
 from .plots import colour
 from .results_table import COLUMNS
 from .flow_layout import FlowLayout
+from .point_hover import PointHover, hoverable_scatter
 
 #: only numeric columns can be plotted
 NUMERIC = [c for c in COLUMNS if c.decimals is not None]
 
-#: the order the instrument ran the samples, from their acquisition times.
+#: the order the instrument ran the samples: the batch order, then the
+#: acquisition times.
 #: This used to be the order the results happened to be computed in — which
 #: follows the order the files were opened, and is only sometimes the same
 #: thing. A drift plotted against the wrong sequence is not a drift.
@@ -32,6 +34,10 @@ UNGROUPED = "no group"
 #: the colour it is drawn in, kept out of the palette so a real group never
 #: shares it
 UNGROUPED_COLOUR = "#9a9a9a"
+
+#: the columns measured in minutes; every other numeric column is a count,
+#: a ratio or a concentration in whatever unit the method gives it
+MINUTES = {"rt", "expected_rt", "rt_delta", "width"}
 
 
 class MetricPlotPanel(QtWidgets.QWidget):
@@ -51,6 +57,9 @@ class MetricPlotPanel(QtWidgets.QWidget):
         super().__init__(parent)
         self.session = session
         self._points: list[tuple[str, str]] = []
+        #: for each point, its row and what it was drawn at: the hover's text
+        self._drawn: list[tuple[object, float, float]] = []
+        self._place: dict[str, int] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -60,7 +69,8 @@ class MetricPlotPanel(QtWidgets.QWidget):
         self.x_combo = QtWidgets.QComboBox()
         self.x_combo.addItems([INJECTION_ORDER, ROW_ORDER])
         self.x_combo.setToolTip(
-            "Injection order comes from the acquisition times in the files; "
+            "Injection order is the batch order, then the acquisition times in "
+            "the files; "
             "row order is the order they were opened in")
         self.x_combo.addItems([c.title for c in NUMERIC])
         bar.addWidget(self.x_combo)
@@ -91,6 +101,7 @@ class MetricPlotPanel(QtWidgets.QWidget):
         #: one scatter per colour group; a single item with per-spot brushes
         #: would draw the same picture but could not be put in a legend
         self._scatters: list[pg.ScatterPlotItem] = []
+        self.hover = PointHover(self.plot, self.describe_point)
         layout.addWidget(self.plot, 1)
 
         self.status = QtWidgets.QLabel("")
@@ -133,6 +144,8 @@ class MetricPlotPanel(QtWidgets.QWidget):
         by_group: dict[str, list[dict]] = {}
         order: list[str] = []
         self._points = []
+        self._drawn = []
+        self._place = injection
         for index, result in enumerate(rows):
             y = self._value(result, y_column)
             if x_column is not None:
@@ -149,6 +162,7 @@ class MetricPlotPanel(QtWidgets.QWidget):
                 order.append(key)
             by_group[key].append({"pos": (x, y), "data": len(self._points)})
             self._points.append((result.sample_key, result.component))
+            self._drawn.append((result, x, y))
 
         self._draw(by_group, order)
         self.plot.setLabel("bottom", x_title)
@@ -161,7 +175,7 @@ class MetricPlotPanel(QtWidgets.QWidget):
             + (f" · {len(order)} group(s)" if self._colouring() else ""))
 
     def _injection_numbers(self) -> dict[str, int]:
-        """Each sample's place in the run, from its acquisition time."""
+        """Each sample's place in the run: batch order, then acquisition time."""
         return {entry.key: number for number, entry
                 in enumerate(acquisition_order(self.session.entries), start=1)}
 
@@ -182,6 +196,7 @@ class MetricPlotPanel(QtWidgets.QWidget):
         return entry.sample_group or UNGROUPED
 
     def _draw(self, by_group: dict[str, list[dict]], order: list[str]) -> None:
+        self.hover.reset()
         for scatter in self._scatters:
             self.plot.removeItem(scatter)
         self._scatters.clear()
@@ -196,10 +211,10 @@ class MetricPlotPanel(QtWidgets.QWidget):
             else:
                 pen_colour = colour(palette_index)
                 palette_index += 1
-            scatter = pg.ScatterPlotItem(size=9, pen=pg.mkPen(theme.axis()),
-                                         brush=pg.mkBrush(pen_colour))
+            scatter = hoverable_scatter(brush=pg.mkBrush(pen_colour))
             scatter.setData(by_group[key])
             scatter.sigClicked.connect(self._on_clicked)
+            self.hover.attach(scatter)
             self.plot.addItem(scatter)
             self._scatters.append(scatter)
             if self._colouring():
@@ -215,6 +230,43 @@ class MetricPlotPanel(QtWidgets.QWidget):
         else:
             value = getattr(result, column.field, None)
         return float(value) if isinstance(value, (int, float)) else None
+
+    def describe_point(self, index) -> str:
+        """Which sample and component a point is, and what it measured."""
+        if not isinstance(index, int) or not 0 <= index < len(self._drawn):
+            return ""
+        result, x, y = self._drawn[index]
+        entry = next((e for e in self.session.entries
+                      if e.key == result.sample_key), None)
+        lines = [result.sample_name or (entry.name if entry else "")]
+        kind = entry.sample_type if entry is not None else ""
+        group = entry.sample_group if entry is not None else ""
+        if kind or group:
+            lines.append(" · ".join(part for part in (
+                kind, f"group {group}" if group else "") if part))
+        lines.append(result.component)
+        x_title = self.x_combo.currentText()
+        if x_title == INJECTION_ORDER and result.sample_key in self._place:
+            lines.append(f"Injection {self._place[result.sample_key]} of "
+                         f"{len(self._place)}")
+        elif x_title == ROW_ORDER:
+            lines.append(f"Row {x:g}")
+        else:
+            lines.append(self._measured(x_title, x))
+        lines.append(self._measured(self.y_combo.currentText(), y))
+        if result.flags:
+            lines.append("Flagged: " + "; ".join(result.flags))
+        if not result.used:
+            lines.append("Excluded from the statistics"
+                         + (f": {result.note}" if result.note else ""))
+        return "\n".join(lines)
+
+    @staticmethod
+    def _measured(title: str, value: float) -> str:
+        column = next((c for c in NUMERIC if c.title == title), None)
+        decimals = column.decimals if column is not None else 3
+        unit = " min" if column is not None and column.field in MINUTES else ""
+        return f"{title} {value:,.{decimals}f}{unit}"
 
     def _on_clicked(self, _scatter, spots) -> None:
         if not spots:

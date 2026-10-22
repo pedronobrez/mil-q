@@ -324,6 +324,7 @@ def _samples(title: str, entries: list[SampleEntry],
     rows = []
     for entry in entries:
         rows.append([
+            "—" if entry.batch_order is None else str(entry.batch_order),
             _escape(entry.name), _escape(entry.filename),
             _escape(entry.sample_type), _escape(entry.sample_group or "—"),
             _number(entry.actual_concentration, 4)
@@ -332,9 +333,10 @@ def _samples(title: str, entries: list[SampleEntry],
             _escape(entry.comment or ""),
         ])
     return _heading(title, breaks) + _table(
-        ["Sample", "File", "Type", "Group", "Concentration", "Dilution", "Comment"],
-        rows, right={4, 5}, empty="No samples were open.",
-        widths=["15%", "23%", "12%", "12%", "14%", "9%", "15%"])
+        ["Order", "Sample", "File", "Type", "Group", "Concentration",
+         "Dilution", "Comment"],
+        rows, right={0, 5, 6}, empty="No samples were open.",
+        widths=["6%", "15%", "21%", "11%", "11%", "13%", "9%", "14%"])
 
 
 def _method(title: str, method: ProcessingMethod,
@@ -479,6 +481,23 @@ def _carryover(title: str, results: ResultsSet, entries: list[SampleEntry],
                      widths=["24%", "16%", "22%", "11%", "27%"]))
 
 
+def _run_order(report) -> str:
+    """
+    What a chart through the run is ordered by, for a sentence of the report:
+    a batch QC or a mass drift, which both count their numbered and timed
+    injections.
+    """
+    numbered = getattr(report, "numbered", 0)
+    if report.ordered:
+        return ("in the batch order typed in the Samples table"
+                if numbered else "in the order the instrument ran them")
+    if numbered:
+        return (f"in batch order for {numbered} of {report.injections} "
+                f"injections, the rest after them by acquisition time")
+    return (f"in the order the files were opened — {report.timed} of "
+            f"{report.injections} injections carry an acquisition time")
+
+
 def _quality(title: str, results: ResultsSet, entries: list[SampleEntry],
              method: ProcessingMethod, breaks: set[str] | None = None) -> str:
     """
@@ -493,10 +512,7 @@ def _quality(title: str, results: ResultsSet, entries: list[SampleEntry],
     if report.note:
         return "".join(parts) + f'<p class="empty">{_escape(report.note)}</p>'
 
-    order = ("in the order the instrument ran them"
-             if report.ordered else
-             f"in the order the files were opened — {report.timed} of "
-             f"{report.injections} injections carry an acquisition time")
+    order = _run_order(report)
     parts.append(
         f'<p class="meta">Internal-standard response {order}. The centre is '
         f"the median and the spread the median absolute deviation, so that "
@@ -672,9 +688,7 @@ def _mass(title: str, drift, breaks: set[str] | None = None,
     parts = [_heading(title, breaks)]
     if drift.note:
         return "".join(parts) + f'<p class="empty">{_escape(drift.note)}</p>'
-    order = ("in the order the instrument ran them" if drift.ordered else
-             f"in the order the files were opened — {drift.timed} of "
-             f"{drift.injections} injections carry an acquisition time")
+    order = _run_order(drift)
     parts.append(
         f'<p class="meta">Each internal standard\u2019s precursor read from '
         f"the survey scan in every injection, {order}, against the "
@@ -1765,19 +1779,20 @@ def _sheet_samples(session) -> Sheet | None:
     rows = []
     for entry in session.entries:
         rows.append([
-            entry.name, entry.filename, entry.sample_index, entry.sample_type,
-            entry.sample_group, entry.actual_concentration,
+            entry.batch_order, entry.name, entry.filename, entry.sample_index,
+            entry.sample_type, entry.sample_group, entry.actual_concentration,
             entry.dilution_factor, entry.comment, entry.problem,
         ])
     if not rows:
         return None
     return Sheet(
         WORKBOOK_SHEETS["samples"],
-        ["Sample", "File", "Index", "Type", "Group", "Concentration",
-         "Dilution", "Comment", "Problem"],
+        ["Batch order", "Sample", "File", "Index", "Type", "Group",
+         "Concentration", "Dilution", "Comment", "Problem"],
         rows,
-        widths=[24, 30, 7, 16, 16, 14, 10, 30, 30],
-        formats=[None, None, "integer", None, None, None, None, None, None])
+        widths=[11, 24, 30, 7, 16, 16, 14, 10, 30, 30],
+        formats=["integer", None, None, "integer", None, None, None, None,
+                 None, None])
 
 
 def build_workbook(session, grouping: str = GROUP_BY_SAMPLE_TYPE,

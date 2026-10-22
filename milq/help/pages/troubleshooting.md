@@ -39,7 +39,8 @@ to you is in the [[glossary]].
 | *No curve yet* | no samples typed Standard with a concentration, or fewer than the regression needs. See [[calibration]] |
 | Every status is empty | no acceptance criteria are set; that is not a pass. See [[acceptance-criteria]] |
 | An internal standard shows a problem in the IS column | the name does not match a component, or that component is not ticked IS. See [[internal-standards-and-qualifiers]] |
-| Batch QC says the order is the opening order | some files carry no acquisition time |
+| Batch QC says the order is the opening order | some files carry no acquisition time; number the injections in the [[samples-workspace]] (**Batch order**) |
+| Batch QC says it is in batch order for only some injections | the rest have no batch order; number every row, or clear the numbers to fall back to acquisition time |
 | Every internal standard is flagged | look at their median response; standards of a few counts cannot normalise anything. See [[batch-qc]] |
 
 ## The application

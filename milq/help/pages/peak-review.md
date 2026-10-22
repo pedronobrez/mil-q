@@ -14,6 +14,15 @@ integrated by hand. A sample where nothing was found is drawn grey with the
 reason in the title (*no peak above noise*, *channel does not cover
 5.10–6.10 min*, *only 4 points to detect in*).
 
+The title and the axis numbers are set in the application's own type, a
+little smaller, and step down once more on a small panel — an 8 x 8 grid,
+or one squeezed by the splitter — but never below 8 points. When the title
+does not fit the panel's width it gives up the area first, then the S/N,
+keeping the name and the retention time to the last; the full row is in the
+results table under the grid. The time axis spaces its labels so each has
+room; on a panel too short for a plot and its numbers, the numbers go and
+the trace stays.
+
 What is drawn on a found peak:
 
 | Element | Meaning |
@@ -30,10 +39,10 @@ What is drawn on a found peak:
 
 | Control | Effect |
 |---|---|
-| **Columns** and **Rows** | the grid's shape; paging appears when the batch is larger than a page. The panels are kept and re-placed rather than rebuilt, so a change of shape is immediate and does not resize the window — see [[workspaces]] |
+| **Columns** and **Rows** | the grid's shape; paging appears when the batch is larger than a page. The panels are kept and re-placed rather than rebuilt, so a change of shape is immediate and does not resize the window — see [[workspaces]]. Every row is the same height and every column the same width at any shape and wherever the splitter above the results is dragged; the empty cells of a short last page keep their place. No panel asks for a size of its own, so the grid never pushes the results pane away |
 | **Manual** | dragging across a panel integrates exactly that range (Shift+drag does the same without the switch) |
-| **Show IS** | draw the internal standard behind the analyte, rescaled to its height — the two rarely share a magnitude, and only the shape and the time are being compared |
-| **Same Y** | one intensity scale across the panels, so heights compare directly |
+| **Show IS** | draw the internal standard behind the analyte, rescaled to the analyte's height where the panel looks — the two rarely share a magnitude, and only the shape and the time are being compared |
+| **Same Y** | one intensity scale across the panels, so heights compare directly. The scale is the tallest point any panel *shows* — inside its zoom, not over the whole run, so a tall neighbour minutes away on one channel does not flatten every peak — and it holds across every page of the component, through a change of **Columns** or **Rows**, **Show IS**, a manual integration and a resize. Zooming one panel's intensity zooms them all. Under *All components* the pages are built one at a time, so there the scale is the page's |
 | **Zoom** | *Expected window*, tight on the *Peak*, or the *Whole run* |
 | **Link X** | zooming one panel zooms them all |
 | **Magnify peak** (toolbar) or double-click | one panel filling the pane |
@@ -45,7 +54,9 @@ trace, and a panel this small is easy to lose one's place in.
 
 Drag across a peak with **Manual** on, or with Shift held. The range is
 integrated as marked — a straight baseline between the two ends, the area
-above it, no peak finding — and the row is marked manual with `✎`. A
+above it, no peak finding — and the row is marked manual with `✎`. The grid
+stays on the page it was on, with the same panel selected, so a batch can be
+reviewed page by page; choosing another component starts again at page 1. A
 manual row survives reprocessing while the settings it was drawn under
 stand: adding an injection, changing another component, or reprocessing the
 batch leaves it exactly as the operator set it. What does replace it is a

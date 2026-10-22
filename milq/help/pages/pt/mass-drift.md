@@ -14,8 +14,9 @@ de modo que o seu íon está lá para ser medido em cada injeção — a massa d
 precursor é lida da varredura de survey no tempo em que a transição do
 próprio padrão atinge o ápice, exatamente como a página
 [[accurate-precursor]] descreve, uma vez por injeção em vez de uma vez por
-lote. As injeções ficam na ordem em que o instrumento as rodou, a partir dos
-seus tempos de aquisição.
+lote. As injeções ficam na ordem em que o instrumento as rodou: a batch order
+de [[samples-workspace]] quando toda injeção tem uma, os seus tempos de
+aquisição caso contrário.
 
 A referência é **a mediana do próprio lote**, não o precursor escrito: um
 valor de método digitado com duas casas decimais é bom até ±14 ppm em m/z
@@ -66,8 +67,11 @@ do instrumento aparece.
 
 O desvio do componente selecionado em ppm contra a ordem de injeção, a
 mediana como linha cheia e ±10 ppm tracejados, a mudança ajustada como uma
-tendência tracejada. Um ponto além de ±10 ppm é desenhado na cor de aviso;
-clicar em um seleciona aquela amostra na grade de [[peak-review]].
+tendência tracejada. Um ponto além de ±10 ppm é desenhado na cor de aviso.
+Passar o cursor sobre um o amplia e dá o nome dele — a amostra, seu tipo e
+grupo, seu lugar na carta, o m/z medido, os ppm da mediana, sua intensidade,
+e se está além de ±10 ppm — como nas cartas de [[batch-qc]]; clicar em um
+seleciona aquela amostra na grade de [[peak-review]].
 
 ## Medido, e corrigido só a pedido
 

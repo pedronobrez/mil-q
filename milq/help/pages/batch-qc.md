@@ -10,9 +10,13 @@ the quality controls.
 
 ## Injection order
 
-The order comes from the acquisition times the files carry; where some
-carry none, the tab says so and falls back to the order the files were
-opened, which is usually the same order. A batch of fewer than six
+The order is the batch order typed in the [[samples-workspace]] where
+every injection has one; otherwise it comes from the acquisition times the
+files carry, and where some carry none, the tab says so and falls back to
+the order the files were opened, which is usually the same order. A batch
+numbered only in part is drawn with the numbered injections first and the
+rest after them by time, and the tab says how many were numbered — see
+[[samples-workspace]]. A batch of fewer than six
 injections cannot say what normal looks like, and the tab says that too.
 
 ## Control charts
@@ -79,7 +83,29 @@ had gone at once.
 | **Component** | which chart is drawn; the table below lists every chart with its centre, spread, drift and verdict, and clicking a row draws it |
 | **Recheck** | recompute from the current results |
 | **Exclude failed injections** | untick every row of every injection the index calls out, marking each with the reason; enabled only when there are any, confirmed first, and rows integrated by hand are left alone — somebody looked at those |
+| hovering a point | names it — see below |
 | clicking a point | selects that sample in the [[peak-review]] grid |
+
+## Which injection a point is
+
+A circle far from the centre is a finding only once it has a name. Resting
+the pointer on one draws it larger with an outline and shows, at once:
+
+- the sample's name, its type and its group where it has one;
+- its place on the chart — *point 8 of 26* — and when it was acquired; on
+  a standard's chart the double blanks and solvent injections are not
+  points, so the place is on the chart and not in the whole run;
+- what it measured: the area, or for the index the injection's ratio to
+  the standards' medians, and how far that is from the centre, as a
+  percentage and in σ;
+- the verdict and the rule behind it: *within limits*, a warning, or
+  *out* — past 3σ and at least 20% away, or at least 50% away however the
+  batch scatters — and, where the method declares one, whether it fell
+  under the floor. On a chart that is unusable or below S/N 10 the point
+  says it is not flagged, and why.
+
+Points that overlap are described together. The same hover is on the
+[[metric-plot]] and on the [[mass-drift]] chart.
 
 ## Precision
 

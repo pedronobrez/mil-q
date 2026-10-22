@@ -39,7 +39,8 @@ nada está no [[glossary]].
 | *No curve yet* | nenhuma amostra tipada como Standard com uma concentração, ou menos do que a regressão precisa. Ver [[calibration]] |
 | Todo status está vazio | nenhum critério de aceitação está definido; isso não é uma aprovação. Ver [[acceptance-criteria]] |
 | Um padrão interno mostra um problema na coluna IS | o nome não corresponde a um componente, ou esse componente não está marcado como IS. Ver [[internal-standards-and-qualifiers]] |
-| O Batch QC diz que a ordem é a ordem de abertura | alguns arquivos não trazem tempo de aquisição |
+| O Batch QC diz que a ordem é a ordem de abertura | alguns arquivos não trazem tempo de aquisição; numere as injeções em [[samples-workspace]] (**Batch order**) |
+| O Batch QC diz que está em batch order só para algumas injeções | as demais não têm batch order; numere todas as linhas, ou apague os números para voltar ao tempo de aquisição |
 | Todo padrão interno está sinalizado | olhe a resposta mediana deles; padrões de umas poucas contagens não conseguem normalizar nada. Ver [[batch-qc]] |
 
 ## A aplicação

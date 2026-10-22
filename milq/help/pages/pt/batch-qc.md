@@ -10,9 +10,13 @@ precisão dos controles de qualidade.
 
 ## Ordem de injeção
 
-A ordem vem dos tempos de aquisição que os arquivos carregam; onde alguns não
-carregam nenhum, a aba o diz e recai sobre a ordem em que os arquivos foram
-abertos, que costuma ser a mesma ordem. Um lote com menos de seis injeções não
+A ordem é a batch order digitada em [[samples-workspace]] quando toda
+injeção tem uma; senão vem dos tempos de aquisição que os arquivos carregam,
+e onde alguns não carregam nenhum, a aba o diz e recai sobre a ordem em que
+os arquivos foram abertos, que costuma ser a mesma ordem. Um lote numerado só
+em parte é desenhado com as injeções numeradas primeiro e o resto depois,
+pelo tempo, e a aba diz quantas foram numeradas — veja
+[[samples-workspace]]. Um lote com menos de seis injeções não
 consegue dizer como é o normal, e a aba também diz isso.
 
 ## Cartas de controle
@@ -78,7 +82,30 @@ padrões haviam caído de uma vez.
 | **Component** | qual carta é desenhada; a tabela abaixo lista cada carta com seu centro, dispersão, deriva e veredito, e clicar numa linha a desenha |
 | **Recheck** | recalcular a partir dos resultados atuais |
 | **Exclude failed injections** | desmarca cada linha de cada injeção que o índice aponta, marcando cada uma com a razão; habilitado apenas quando há alguma, confirmado antes, e linhas integradas à mão são deixadas em paz — alguém olhou para aquelas |
+| passar o cursor sobre um ponto | dá o nome dele — veja abaixo |
 | clicar num ponto | seleciona aquela amostra na grade de [[peak-review]] |
+
+## Qual injeção é um ponto
+
+Um círculo longe do centro só é um achado depois de ter um nome. Pousar o
+cursor sobre um o desenha maior, com contorno, e mostra de imediato:
+
+- o nome da amostra, seu tipo e seu grupo quando tem um;
+- seu lugar na carta — *ponto 8 de 26* — e quando foi adquirida; na carta
+  de um padrão os brancos duplos e as injeções de solvente não são pontos,
+  então o lugar é na carta e não na corrida inteira;
+- o que mediu: a área, ou, no índice, a razão da injeção às medianas dos
+  padrões, e quão longe isso está do centro, em porcentagem e em σ;
+- o veredito e a regra por trás dele: *dentro dos limites*, um aviso, ou
+  *fora* — além de 3σ e pelo menos 20% distante, ou pelo menos 50% distante
+  qualquer que seja a dispersão do lote — e, quando o método declara um,
+  se ficou abaixo do piso. Numa carta inutilizável ou abaixo de S/N 10 o
+  ponto diz que não é sinalizado, e por quê.
+
+Pontos sobrepostos são descritos juntos. O mesmo vale para o
+[[metric-plot]] e para a carta de [[mass-drift]].
+
+O texto aparece em inglês, como o resto da interface.
 
 ## Precisão
 

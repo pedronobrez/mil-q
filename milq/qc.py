@@ -41,7 +41,8 @@ from .components import RESPONSE_AREA
 from .method import ProcessingMethod
 from .quantify import ResultsSet
 from .samples import BLANK, QC, STANDARD, UNKNOWN, SampleEntry
-from .validation import acquisition_order
+from .validation import (acquisition_order, describe_order, order_counts,
+                         order_is_known)
 
 #: below this many injections a batch cannot say what normal looks like
 MIN_INJECTIONS = 6
@@ -575,17 +576,26 @@ class BatchQC:
     injections: int = 0
     timed: int = 0
     note: str = ""
+    #: injections given a batch order in the Samples table
+    numbered: int = 0
 
     @property
     def ordered(self) -> bool:
         """
         Whether the order plotted is the order the instrument ran.
 
-        Without acquisition times the only sequence left is the order the
-        files were opened in. It is usually the same and it is not the same
-        thing, and a drift measured against it means correspondingly less.
+        A batch order on every injection says so, or, with none numbered,
+        an acquisition time on every one. Without either the only sequence
+        left is the order the files were opened in. It is usually the same
+        and it is not the same thing, and a drift measured against it means
+        correspondingly less.
         """
-        return self.timed == self.injections and self.injections > 0
+        return order_is_known(self.injections, self.numbered, self.timed)
+
+    @property
+    def order(self) -> str:
+        """What the sequence rests on, as a phrase: `in batch order`, …"""
+        return describe_order(self.injections, self.numbered, self.timed)
 
     @property
     def drifted(self) -> list[ControlChart]:
@@ -746,8 +756,8 @@ def batch_qc(results: ResultsSet, entries: list[SampleEntry],
     the batch whose variation is the batch's own and not the study's.
     """
     ordered = acquisition_order(entries)
-    report = BatchQC(injections=len(ordered),
-                     timed=sum(1 for entry in ordered if _stamp(entry)))
+    numbered, timed = order_counts(ordered)
+    report = BatchQC(injections=len(ordered), timed=timed, numbered=numbered)
     if not ordered:
         report.note = "no samples are open"
         return report

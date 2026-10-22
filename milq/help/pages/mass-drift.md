@@ -13,8 +13,9 @@ For each internal standard — it is in every vial at one amount, so its ion
 is there to measure in every injection — the precursor's mass is read from
 the survey scan at the time the standard's own transition peaks, exactly as
 the [[accurate-precursor]] page describes, once per injection rather than
-once per batch. The injections are in the order the instrument ran them,
-from their acquisition times.
+once per batch. The injections are in the order the instrument ran them:
+the batch order of the [[samples-workspace]] where every injection has
+one, their acquisition times otherwise.
 
 The reference is **the batch's own median**, not the written precursor: a
 method value typed to two decimals is good to ±14 ppm at m/z 350 and says
@@ -64,7 +65,10 @@ drift shows up in.
 
 The selected component's deviation in ppm against injection order, the
 median as a solid line and ±10 ppm dashed, the fitted change as a dashed
-trend. A point beyond ±10 ppm is drawn in the warning colour; clicking one
+trend. A point beyond ±10 ppm is drawn in the warning colour. Hovering
+one enlarges it and names it — the sample, its type and group, its place on
+the chart, the measured m/z, the ppm from the median, its intensity, and
+whether it is beyond ±10 ppm — as on the [[batch-qc]] charts; clicking one
 selects that sample in the [[peak-review]] grid.
 
 ## Measured, then corrected only on request

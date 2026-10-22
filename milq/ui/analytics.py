@@ -397,7 +397,9 @@ class AnalyticsWorkspace(QtWidgets.QWidget):
                 if sx.size:
                     is_trace = (sx, sy)
             items.append((result, x, y, expected, is_trace))
-        self.grid.set_items(component.label, items)
+        # keyed by the component, so the refresh every manual integration
+        # and reprocessing ends in keeps the page the operator is on
+        self.grid.set_items(component.label, items, key=component.name)
 
         found = sum(1 for i in items if i[0].found)
         message = f"{component.name}: {found} of {len(items)} sample(s) integrated"

@@ -7,10 +7,11 @@ ordem de injeção ou outra coluna, para um componente ou para todos.
 
 | Controle | Efeito |
 |---|---|
-| **X** | *injection order* — a ordem em que o instrumento executou as amostras, a partir dos tempos de aquisição; *row order* — a ordem da tabela de resultados; ou qualquer coluna numérica |
+| **X** | *injection order* — a ordem em que o instrumento executou as amostras, a partir da ordem do batch quando toda injeção tem uma, senão dos tempos de aquisição; *row order* — a ordem da tabela de resultados; ou qualquer coluna numérica |
 | **Y** | qualquer coluna numérica: área, altura, S/N, razão de áreas, tempo de retenção, ΔRT, concentração calculada, exatidão… |
 | **Component** | um componente, ou todos os componentes sobrepostos |
 | **Colour by** | *sample group*, *sample type* ou *nothing* — com legenda, e *no group* para as amostras que não têm nenhum |
+| passar o cursor sobre um ponto | o desenha maior e dá o nome dele: a amostra, seu tipo e grupo, o componente, seu número de injeção (na ordem de injeção), os dois valores com suas unidades, e qualquer sinalização de aceitação ou exclusão da linha |
 | clicar em um ponto | seleciona a linha correspondente na [[results-table]] e o painel dela na grade de [[peak-review]] |
 
 ## Usos

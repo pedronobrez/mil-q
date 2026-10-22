@@ -18,7 +18,8 @@ ficam guardados na [[samples-workspace]] e são salvos com o projeto.
 
 O tempo de aquisição é o que a página [[batch-qc]] e o eixo de ordem de injeção
 do [[metric-plot]] usam para colocar as injeções na ordem em que o instrumento
-as executou.
+as executou, a menos que uma batch order tenha sido digitada em
+[[samples-workspace]], que então tem precedência.
 
 ## Active channel
 

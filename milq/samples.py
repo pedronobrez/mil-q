@@ -44,6 +44,13 @@ class SampleEntry:
     #: why the sample's spectra cannot be read — a `.wiff.scan` not beside
     #: its `.wiff` — set when the file is opened; empty when they can
     problem: str = field(default="", compare=False)
+    #: the injection's place in the run — 1 for the first vial the
+    #: instrument took. Typed, not read: a .wiff carries an acquisition time
+    #: but no sequence position, and an mzML converted elsewhere may carry
+    #: neither. None until somebody numbers it; where it is set it decides
+    #: the order of every chart through the run (`validation.acquisition_order`).
+    #: Last in the field order so positional construction keeps working.
+    batch_order: int | None = None
 
     @property
     def key(self) -> str:
@@ -64,6 +71,7 @@ class SampleEntry:
             "name": self.name,
             "sample_type": self.sample_type,
             "sample_group": self.sample_group,
+            "batch_order": self.batch_order,
             "actual_concentration": self.actual_concentration,
             "dilution_factor": self.dilution_factor,
             "comment": self.comment,
@@ -84,7 +92,71 @@ class SampleEntry:
             ),
             dilution_factor=float(data.get("dilution_factor", 1.0) or 1.0),
             comment=str(data.get("comment", "")),
+            batch_order=parse_batch_order(data.get("batch_order")),
         )
+
+
+def parse_batch_order(value) -> int | None:
+    """
+    A batch order as typed or as saved: a whole number from 1, or None.
+
+    `"3"`, `3` and `3.0` are the same position; anything else — empty, zero,
+    negative, a fraction, a word — is no position, because a vial cannot be
+    injected 2.5th and a guessed number would reorder every chart in the run.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not number.is_integer() or number < 1:
+        return None
+    return int(number)
+
+
+def acquisition_stamp(entry: SampleEntry) -> str:
+    """The acquisition time the file carries, or "" where it carries none."""
+    if not entry.is_loaded:
+        return ""
+    return str(getattr(entry.sample, "acquisition_time", "") or "")
+
+
+def numbering_start(entries: list[SampleEntry], targets: list[SampleEntry]) -> int:
+    """
+    The first number to give `targets` when they are numbered as a block.
+
+    Every row numbered starts at 1. Part of the batch numbered keeps the
+    lowest number already among those rows — renumbering a stretch keeps it
+    where it was — and a stretch with no number yet follows the highest
+    number anywhere else in the batch, so it never collides with rows the
+    selection did not touch.
+    """
+    chosen = {id(entry) for entry in targets}
+    if len(chosen) == len(entries):
+        return 1
+    own = [e.batch_order for e in targets if e.batch_order is not None]
+    if own:
+        return min(own)
+    others = [e.batch_order for e in entries
+              if id(e) not in chosen and e.batch_order is not None]
+    return max(others) + 1 if others else 1
+
+
+def by_acquisition_time(entries: list[SampleEntry]) -> list[SampleEntry]:
+    """
+    `entries` by the time the files carry; those without one after them, in
+    the order they came.
+    """
+    def when(entry: SampleEntry):
+        stamp = acquisition_stamp(entry)
+        return (stamp == "", stamp)
+
+    return sorted(entries, key=when)
 
 
 def shorten_names(entries: list[SampleEntry]) -> None:

@@ -15,10 +15,11 @@ from PyQt6 import QtCore, QtWidgets
 
 from . import theme
 from ..qc import (ALWAYS_OUT_PERCENT, MIN_SNR, OUTLIER_SIGMA,
-                  OUT_PERCENT, WARN_SIGMA, BatchQC, ControlChart,
-                  batch_qc, exclude_failed, failed_injections)
+                  OUT_PERCENT, RESPONSE_INDEX, WARN_SIGMA, BatchQC,
+                  ControlChart, batch_qc, exclude_failed, failed_injections)
 from ..session import Session
 from .flow_layout import FlowLayout
+from .point_hover import PointHover, hoverable_scatter, signed
 
 POINT = "#234b8c"
 POINT_OUT = "#a4262c"
@@ -92,9 +93,11 @@ class QualityPanel(QtWidgets.QWidget):
         self._lines: list[pg.InfiniteLine] = []
         self._trend = self.plot.plot([], [], pen=pg.mkPen(TREND_PEN, width=1.2,
                                                           style=QtCore.Qt.PenStyle.DashLine))
-        self._scatter = pg.ScatterPlotItem(size=9, pen=pg.mkPen(theme.axis()))
+        self._scatter = hoverable_scatter()
         self._scatter.sigClicked.connect(self._on_point_clicked)
         self.plot.addItem(self._scatter)
+        self.hover = PointHover(self.plot, self.describe_point)
+        self.hover.attach(self._scatter)
         body.addWidget(self.plot)
 
         self.table = QtWidgets.QTableWidget(0, 8)
@@ -234,10 +237,7 @@ class QualityPanel(QtWidgets.QWidget):
             self.status.setText(" · ".join(said))
             return
         said = [f"{report.injections} injection(s)"]
-        said.append("in acquisition order" if report.ordered else
-                    f"in the order opened — only {report.timed} of "
-                    f"{report.injections} carry an acquisition time, so the "
-                    f"sequence is a guess")
+        said.append(report.order)
         if report.drifted:
             said.append(f"{len(report.drifted)} drifting")
         if report.unusable:
@@ -368,6 +368,7 @@ class QualityPanel(QtWidgets.QWidget):
 
     # -- the chart ----------------------------------------------------------- #
     def _clear(self) -> None:
+        self.hover.reset()
         self._scatter.setData([])
         self._trend.setData([], [])
         for line in self._lines:
@@ -426,6 +427,81 @@ class QualityPanel(QtWidgets.QWidget):
         self._lines.append(line)
 
     # -- interaction --------------------------------------------------------- #
+    def describe_point(self, index) -> str:
+        """
+        Who a point is, what it measured and whether the chart calls it out:
+        the text shown when it is hovered.
+        """
+        chart = self._chart
+        if (chart is None or not isinstance(index, int)
+                or not 0 <= index < len(chart.injections)):
+            return ""
+        point = chart.injections[index]
+        entry = next((e for e in self.session.entries if e.name == point.sample),
+                     None)
+        lines = [point.sample]
+        kind = point.sample_type or (entry.sample_type if entry else "")
+        group = entry.sample_group if entry is not None else ""
+        if kind or group:
+            lines.append(" · ".join(part for part in (
+                kind, f"group {group}" if group else "") if part))
+        place = f"Point {point.order} of {len(chart.injections)} on this chart"
+        if self._report is not None and not self._report.ordered:
+            place += " (not the order of the run)"
+        lines.append(place)
+        if entry is not None and entry.batch_order is not None:
+            lines.append(f"Batch order {entry.batch_order}")
+        if point.when:
+            lines.append(f"Acquired {point.when}")
+        if chart.component == RESPONSE_INDEX:
+            lines.append(f"Index {point.value:.3f} (1 is every standard "
+                         f"at its own median)")
+        else:
+            lines.append(f"Area {point.value:,.0f}")
+        unit = chart.limits.unit
+        if chart.measurable:
+            away = signed(point.percent, unit)
+            if point.sigmas is not None:
+                away += f", {point.sigmas:+.1f}σ"
+            lines.append(f"{away} from the centre of "
+                         + (f"{chart.centre:.3f}" if chart.component == RESPONSE_INDEX
+                            else f"{chart.centre:,.0f}"))
+        lines.append(self._flag_of(chart, point))
+        return "\n".join(lines)
+
+    @staticmethod
+    def _flag_of(chart: ControlChart, point) -> str:
+        """Whether the chart calls this point out, and on which rule."""
+        limits = chart.limits
+        space = "" if limits.unit == "%" else " "
+        below = (chart.floor is not None and point.value < chart.floor)
+        floor = (f"; below the method's floor of {chart.floor:,.0f}"
+                 if below else "")
+        if not chart.measurable:
+            return "Not judged: " + (chart.note or "the chart has no spread")
+        if not chart.quantifiable:
+            return ("Not flagged: the response is too small to quantify"
+                    + floor)
+        if point.out:
+            if point.percent is not None and abs(point.percent) >= limits.always:
+                rule = (f"at least {limits.always:g}{space}{limits.unit} from "
+                        f"the centre, out however the batch scatters")
+            else:
+                rule = (f"past {OUTLIER_SIGMA:g}σ and at least "
+                        f"{limits.out:g}{space}{limits.unit} from the centre")
+            said = f"OUT: {rule}{floor}"
+            if chart.unusable:
+                said += (" — but a third of the chart is out, so the "
+                         "standard is what failed")
+            return said
+        if point.warned:
+            return (f"Warning: past {WARN_SIGMA:g}σ and at least "
+                    f"{limits.warn:g}{space}{limits.unit} from the centre"
+                    + floor)
+        if below:
+            return f"Below the method's floor of {chart.floor:,.0f}"
+        return "Within limits"
+
     def _on_row_clicked(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)
         if item is not None:

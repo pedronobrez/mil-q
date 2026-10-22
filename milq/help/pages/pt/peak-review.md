@@ -15,6 +15,15 @@ mão. Uma amostra em que nada foi encontrado é desenhada em cinza, com o motivo
 no título (*no peak above noise*, *channel does not cover 5.10–6.10 min*,
 *only 4 points to detect in*).
 
+O título e os números dos eixos usam a própria fonte da aplicação, um pouco
+menor, e diminuem mais um passo num painel pequeno — uma grade 8 x 8, ou uma
+espremida pelo divisor — mas nunca abaixo de 8 pontos. Quando o título não
+cabe na largura do painel, abre mão primeiro da área, depois do S/N,
+mantendo o nome e o tempo de retenção até o fim; a linha completa está na
+tabela de resultados abaixo da grade. O eixo do tempo espaça os rótulos para
+que cada um tenha lugar; num painel baixo demais para um gráfico e seus
+números, saem os números e fica o traço.
+
 O que é desenhado sobre um pico encontrado:
 
 | Elemento | Significado |
@@ -31,10 +40,10 @@ O que é desenhado sobre um pico encontrado:
 
 | Controle | Efeito |
 |---|---|
-| **Columns** e **Rows** | a forma da grade; a paginação aparece quando o lote é maior que uma página. Os painéis são guardados e recolocados em vez de reconstruídos, pelo que mudar a forma é imediato e não redimensiona a janela — ver [[workspaces]] |
+| **Columns** e **Rows** | a forma da grade; a paginação aparece quando o lote é maior que uma página. Os painéis são guardados e recolocados em vez de reconstruídos, pelo que mudar a forma é imediato e não redimensiona a janela — ver [[workspaces]]. Todas as linhas têm a mesma altura e todas as colunas a mesma largura em qualquer forma e onde quer que se arraste o divisor acima dos resultados; as células vazias de uma última página curta guardam o seu lugar. Nenhum painel pede um tamanho próprio, de modo que a grade nunca empurra o painel de resultados |
 | **Manual** | arrastar sobre um painel integra exatamente aquele intervalo (Shift+arrastar faz o mesmo sem a chave) |
-| **Show IS** | desenha o padrão interno atrás do analito, reescalado à altura dele — os dois raramente compartilham uma magnitude, e só a forma e o tempo estão sendo comparados |
-| **Same Y** | uma única escala de intensidade em todos os painéis, para que as alturas se comparem diretamente |
+| **Show IS** | desenha o padrão interno atrás do analito, reescalado à altura do analito onde o painel olha — os dois raramente compartilham uma magnitude, e só a forma e o tempo estão sendo comparados |
+| **Same Y** | uma única escala de intensidade em todos os painéis, para que as alturas se comparem diretamente. A escala é o ponto mais alto que algum painel *mostra* — dentro do seu zoom, não na corrida inteira, de modo que um vizinho alto minutos adiante num canal não achata todos os picos — e se mantém em todas as páginas do componente, ao mudar **Columns** ou **Rows**, **Show IS**, numa integração manual e ao redimensionar. Dar zoom na intensidade de um painel dá zoom em todos. Em *All components* as páginas são construídas uma de cada vez, e ali a escala é a da página |
 | **Zoom** | *Expected window*, justo no *Peak*, ou a corrida inteira (*Whole run*) |
 | **Link X** | dar zoom em um painel dá zoom em todos |
 | **Magnify peak** (barra de ferramentas) ou duplo clique | um painel ocupando o painel inteiro |
@@ -47,7 +56,9 @@ um pico, e num painel tão pequeno é fácil perder a referência.
 Arraste sobre um pico com **Manual** ligado, ou com Shift pressionado. O
 intervalo é integrado como marcado — uma linha de base reta entre as duas
 extremidades, a área acima dela, sem detecção de pico — e a linha é marcada
-como manual com `✎`. Uma linha manual sobrevive ao reprocessamento enquanto
+como manual com `✎`. A grade fica na página em que estava, com o mesmo
+painel selecionado, de modo que um lote pode ser revisto página a página;
+escolher outro componente recomeça na página 1. Uma linha manual sobrevive ao reprocessamento enquanto
 valerem os parâmetros sob os quais foi desenhada: acrescentar uma injeção,
 mudar outro componente ou reprocessar o lote a deixa exatamente como o
 operador a definiu. O que a substitui é uma mudança nos parâmetros de extração

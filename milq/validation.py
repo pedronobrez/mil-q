@@ -21,7 +21,7 @@ import numpy as np
 from .calibration import Calibration
 from .method import ProcessingMethod
 from .quantify import ResultsSet
-from .samples import SampleEntry
+from .samples import SampleEntry, acquisition_stamp, by_acquisition_time
 
 #: the multipliers of ICH Q2: the smallest signal that can be told from noise,
 #: and the smallest that can be measured with acceptable precision
@@ -171,17 +171,64 @@ def acquisition_order(entries: list[SampleEntry]) -> list[SampleEntry]:
     """
     The injections in the order the instrument ran them.
 
-    The acquisition time is what says so; where a file does not carry one, the
-    order the samples were opened in is the only thing left, and it is usually
-    the same order.
-    """
-    def when(entry: SampleEntry):
-        stamp = ""
-        if entry.is_loaded:
-            stamp = str(getattr(entry.sample, "acquisition_time", "") or "")
-        return (stamp == "", stamp)
+    The batch order typed in the Samples table says so where it is set; the
+    acquisition time the file carries says so where it is not; where neither
+    is there, the order the samples were opened in is the only thing left,
+    and it is usually the same order.
 
-    return sorted(entries, key=when)
+    A batch numbered only in part puts the numbered injections first, by
+    number, and the rest after them by acquisition time. Nothing places an
+    unnumbered injection *between* two numbered ones — the clock and the
+    numbers are two claims that need not agree, and interleaving them would
+    make the order depend on which one was believed at each step — so the
+    partial order is reported as such (`describe_order`) rather than as the
+    run. Ties between equal numbers fall to the clock, then to the order
+    opened.
+    """
+    numbered = sorted((e for e in entries if e.batch_order is not None),
+                      key=lambda e: e.batch_order)
+    rest = [e for e in entries if e.batch_order is None]
+    if numbered:
+        # equal numbers: by time within the tie, stably
+        numbered = sorted(by_acquisition_time(numbered),
+                          key=lambda e: e.batch_order)
+    return numbered + by_acquisition_time(rest)
+
+
+def order_counts(entries: list[SampleEntry]) -> tuple[int, int]:
+    """How many of `entries` carry a batch order, and how many a time."""
+    return (sum(1 for e in entries if e.batch_order is not None),
+            sum(1 for e in entries if acquisition_stamp(e)))
+
+
+def order_is_known(injections: int, numbered: int, timed: int) -> bool:
+    """
+    Whether a sequence is the one the instrument ran: every injection
+    numbered, or none numbered and every one timed.
+    """
+    if injections <= 0:
+        return False
+    return numbered == injections or (numbered == 0 and timed == injections)
+
+
+def describe_order(injections: int, numbered: int, timed: int) -> str:
+    """
+    What the sequence of a chart through the run rests on, in a phrase that
+    follows "N injection(s)": the batch order, the clock, part of each, or
+    only the order the files were opened in.
+    """
+    if injections > 0 and numbered == injections:
+        return "in batch order"
+    if numbered:
+        rest = injections - numbered
+        return (f"in batch order for {numbered} of {injections}, the other "
+                f"{rest} after them by acquisition time — number every "
+                f"injection for the order of the run")
+    if injections > 0 and timed == injections:
+        return "in acquisition order"
+    return (f"in the order opened — only {timed} of {injections} carry an "
+            f"acquisition time and none a batch order, so the sequence is a "
+            f"guess")
 
 
 def carryover(results: ResultsSet, entries: list[SampleEntry],

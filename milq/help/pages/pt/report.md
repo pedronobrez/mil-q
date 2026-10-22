@@ -15,7 +15,7 @@ vez de deixar um buraco.
 | Seção | Contém |
 |---|---|
 | Summary | linhas, amostras, componentes; quantas passaram, ficaram marginais, falharam; linhas excluídas; e os achados — cada linha reprovada com suas marcações |
-| Samples | a tabela do lote: nome, tipo, grupo, concentração, diluição, tempo de aquisição |
+| Samples | a tabela do lote: batch order, nome, arquivo, tipo, grupo, concentração, diluição, comentário |
 | Method | a tabela de componentes, os padrões e os achados de [[check-method]] |
 | Calibration | a regressão de cada curva, a ponderação, a equação, o r², e seus padrões com as exatidões; a curva de um padrão interno rotulada como sem significado |
 | Detection and quantitation limits | LOD e LOQ por componente, com as notas de [[detection-limits-and-carryover]] |

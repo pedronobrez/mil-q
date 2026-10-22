@@ -37,7 +37,8 @@ it, which would make a sensitive method look worse the higher its top
 calibrator went. The limit is 20%. Blank, Double Blank and Solvent all
 count as blanks; internal standards are not checked.
 
-The order of injection comes from the acquisition times. A blank somewhere
+The order of injection is the batch order of the [[samples-workspace]]
+where it is set, and the acquisition times otherwise. A blank somewhere
 else in the run is not this test and is not reported as though it were;
 and a run with no blank after the top standard comes back with *no blank
 was injected after the highest standard; inject one to measure carryover*

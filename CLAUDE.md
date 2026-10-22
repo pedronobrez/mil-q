@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 1.0.3 prepared. 1948 tests. Public repository.**
+**Version 1.0.4 prepared. 2034 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -1545,6 +1545,24 @@ UV detector, is not implemented there) — untested on real Windows.
   folder and its direct subfolders — a name in two subfolders is not
   guessed, a `.wiff` counts only with its `.wiff.scan`, and `raw_name`
   splits on `\` too, because `os.path.basename` on a Mac does not.
+- **A refresh is not a new list, and a shared scale is what is shown.**
+  A manual integration ends in `analytics.refresh_grid` → `set_items`,
+  which always went back to page 1; `set_items(..., key=)` keeps the page
+  and the selection when the key is the same and starts at page 1 when it
+  is not. **Same Y** took the top of each panel's *whole-run* trace, so one
+  tall neighbour minutes away set every panel's scale and the switch looked
+  dead; `visible_extent()` takes it from the span each panel shows, and
+  `show_view()` sets both axes with auto-range off. Panels are
+  Ignored/Ignored with a zero minimum and keep their space when hidden —
+  QGraphicsView's own 90 x 90 minimum made an 8 x 8 grid demand 748 px and
+  refuse the splitter. Type is derived from the application's font
+  (`panel_type`, floor 8 pt); a stylesheet border is a frame pyqtgraph does
+  not know about, which is what cut the time axis off.
+- **The order of the run is the batch order where there is one.**
+  `SampleEntry.batch_order` (last field, `None` in older projects) is read
+  first by `validation.acquisition_order`; a partly numbered batch puts the
+  numbered injections first and the rest after them by time, never
+  interleaved, and `describe_order` says so on the chart.
 - **Pinned spectra are traces after the live one.** `explorer.pin_spectrum`
   copies the live trace (`key == "spec"`) with the pane's title as its
   label and appends it; `_with_pins` keeps the live one first, so every
@@ -1785,7 +1803,7 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-1948 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+2034 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
 `tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so

@@ -8,6 +8,8 @@ having to be hunted down sample by sample.
 
 from __future__ import annotations
 
+import html
+
 import numpy as np
 import pyqtgraph as pg
 from PyQt6 import QtCore, QtGui, QtWidgets
@@ -28,6 +30,79 @@ AREA_FILL = QtGui.QColor(35, 90, 175, 120)
 AREA_EDGE = "#3b6ec8"
 MISSING_PEN = "#b0b0b0"
 IS_PEN = "#d62728"
+
+#: a panel's type as a share of the application's font. At a fixed 7 points
+#: for the ticks and 8 for the title the panels read at half the size of the
+#: results table under them — 13 points on a Mac — and the bottom axis was
+#: measured for the small type while the title row was a fixed 30 pixels.
+TITLE_SCALE = 0.92
+TICK_SCALE = 0.85
+#: a panel smaller than this (width, height in pixels) — an 8 x 8 grid, or a
+#: grid squeezed by the splitter — steps its type down by `COMPACT_SCALE`
+COMPACT_BELOW = (240, 160)
+COMPACT_SCALE = 0.85
+#: never below this, however small the panel: past it nothing is read at all
+FONT_FLOOR_PT = 8.0
+#: the least plot a panel keeps between its title and its time axis; below it
+#: the axis's numbers go, rather than the trace
+MIN_PLOT_PX = 28
+#: between the fields of a panel's title
+TITLE_GAP = "   "
+#: the top of a panel's Y axis over the tallest point it shows
+HEADROOM = 1.05
+
+
+def panel_type(width: int, height: int,
+               base: float | None = None) -> tuple[float, float]:
+    """
+    The title's and the ticks' point sizes for a panel of this size.
+
+    Derived from the application's font rather than fixed, so a panel is read
+    in the same type as the table beside it, a little smaller, and never
+    below `FONT_FLOOR_PT`.
+    """
+    if base is None:
+        app = QtWidgets.QApplication.instance()
+        font = app.font() if app is not None else QtGui.QFont()
+        base = font.pointSizeF()
+        if base <= 0:            # a font sized in pixels has no point size
+            base = font.pixelSize() * 0.75 if font.pixelSize() > 0 else 10.0
+    scale = 1.0
+    if width < COMPACT_BELOW[0] or height < COMPACT_BELOW[1]:
+        scale = COMPACT_SCALE
+    return (max(FONT_FLOOR_PT, base * TITLE_SCALE * scale),
+            max(FONT_FLOOR_PT, base * TICK_SCALE * scale))
+
+
+def _font(points: float) -> QtGui.QFont:
+    # a QFont built from an empty family name crashes Qt when an axis measures
+    # its tick labels, so start from the application's font
+    app = QtWidgets.QApplication.instance()
+    font = QtGui.QFont(app.font()) if app is not None else QtGui.QFont()
+    font.setPointSizeF(points)
+    return font
+
+
+def visible_extent(x: np.ndarray, y: np.ndarray,
+                   span: tuple[float, float] | None) -> tuple[float, float]:
+    """
+    The lowest and highest point of a trace inside `span`, the low end never
+    above zero.
+
+    Inside the span, not over the whole run: a channel carrying a tall
+    neighbour minutes away put every panel's ceiling at that neighbour, and
+    with **Same Y** on the whole grid was drawn flat.
+    """
+    if not len(x) or not len(y):
+        return 0.0, 0.0
+    finite = np.isfinite(x) & np.isfinite(y)
+    if span is not None:
+        inside = finite & (x >= span[0]) & (x <= span[1])
+        if inside.any():
+            finite = inside
+    if not finite.any():
+        return 0.0, 0.0
+    return min(0.0, float(np.min(y[finite]))), float(np.max(y[finite]))
 
 
 class _PanelViewBox(pg.ViewBox):
@@ -51,6 +126,54 @@ class _PanelViewBox(pg.ViewBox):
         super().mouseDragEvent(ev, axis)
 
 
+class _PanelAxis(pg.AxisItem):
+    """
+    An axis that spaces its labels for the type they are drawn in.
+
+    pyqtgraph asks for at least two and a quarter intervals whatever the
+    axis's length, so a 130-pixel time axis at a readable size printed
+    `4.04.55.0`, and a 30-pixel intensity axis drew 2000 over 1000. Here the
+    major spacing steps 1, 2, 5, 10 until every label has its own width and
+    as much again between it and the next — or, upright, half its height —
+    and a short axis keeps one label rather than none.
+    """
+
+    def tickSpacing(self, minVal, maxVal, size):
+        levels = super().tickSpacing(minVal, maxVal, size)
+        span = abs(maxVal - minVal)
+        if not levels or self._tickSpacing is not None or span == 0 or size <= 0:
+            return levels
+        font = self.style["tickFont"] or QtGui.QFont()
+        metrics = QtGui.QFontMetrics(font)
+        spacing = levels[0][0]
+        coarsened = False
+        for _ in range(12):
+            if self.orientation in ("left", "right"):
+                room = metrics.height() * 1.5
+            else:
+                labels = self.tickStrings([minVal, maxVal], 1.0, spacing)
+                room = 2 * max(metrics.horizontalAdvance(t) for t in labels)
+            if max(1, int(span // spacing)) * room <= size:
+                break
+            spacing = _next_nice(spacing)
+            coarsened = True
+        if not coarsened:
+            return levels
+        # one level: a finer one would be labelled again wherever pyqtgraph
+        # found room, which is what is being prevented
+        return [(spacing, 0)]
+
+
+def _next_nice(step: float) -> float:
+    """The next of 1, 2, 5, 10, 20, 50… above `step`."""
+    power = 10.0 ** np.floor(np.log10(step))
+    mantissa = round(step / power, 6)
+    for nice in (2.0, 5.0, 10.0):
+        if mantissa < nice:
+            return nice * power
+    return 20.0 * power
+
+
 class PeakPanel(pg.PlotWidget):
     """One sample's chromatogram, with its integrated peak shaded."""
 
@@ -67,13 +190,33 @@ class PeakPanel(pg.PlotWidget):
         # changed.
         self.viewbox = _PanelViewBox(enableMenu=False)
         super().__init__(parent, background=theme.background(),
-                         viewBox=self.viewbox)
+                         viewBox=self.viewbox,
+                         axisItems={"bottom": _PanelAxis("bottom"),
+                                    "left": _PanelAxis("left")})
         self.sample_key = ""
         self.showGrid(x=True, y=True, alpha=0.12)
         self.setMenuEnabled(False)
         self.hideButtons()
-        self.getAxis("left").setWidth(46)
-        theme.style_axes(self, faint=True, tick_points=7)
+        theme.style_axes(self, faint=True)
+        # the grid shares its space by stretch alone: a panel that asked for
+        # a size of its own — a QGraphicsView's 90 x 90, a long title — made
+        # its row the one that would not shrink, and a grid squeezed by the
+        # splitter ran its last rows off the bottom. Kept when hidden, so the
+        # empty cells of a short last page hold their place.
+        policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored,
+                                       QtWidgets.QSizePolicy.Policy.Ignored)
+        policy.setRetainSizeWhenHidden(True)
+        self.setSizePolicy(policy)
+        self.setMinimumSize(0, 0)
+        # the title spans the whole panel, not just the plot beside the Y
+        # axis: that column is all a narrow panel has, and an 8 x 8 grid's
+        # titles were being cut to make room for the axis numbers under them
+        item = self.getPlotItem()
+        item.layout.removeItem(item.titleLabel)
+        item.layout.addItem(item.titleLabel, 0, 0, 1, 3)
+        self._title = ("", "", [], theme.foreground())  # name, note, parts, colour
+        self._type: tuple | None = None   # (title pt, tick pt, values shown)
+        self._top = 0.0                   # the highest value the Y axis labels
 
         self._curve = self.plot([], [], pen=pg.mkPen(FOUND_PEN, width=1.3))
         self._is_curve = self.plot(
@@ -154,7 +297,7 @@ class PeakPanel(pg.PlotWidget):
         self._area_base.setData(dense, floor)
 
     def fence(self, x: np.ndarray, y: np.ndarray,
-              ceiling: float | None = None) -> None:
+              ceiling: float | None = None, floor: float | None = None) -> None:
         """
         Keep the panel inside its own data, as the Explorer's plots are.
 
@@ -164,7 +307,9 @@ class PeakPanel(pg.PlotWidget):
         limit set from this panel's own tallest point is exactly what stops
         a shared scale from being shown: `setYRange` to the grid's ceiling
         was clamped straight back to the panel's own, and the switch looked
-        as though it did nothing.
+        as though it did nothing. `floor` is the same at the bottom: the
+        lowest point of any panel, which one whose trace never dips below
+        zero would otherwise clamp away.
         """
         box = self.getViewBox()
         if not len(x) or not len(y):
@@ -179,6 +324,8 @@ class PeakPanel(pg.PlotWidget):
         y_high = float(np.max(y[finite]))
         if ceiling is not None and ceiling > y_high:
             y_high = float(ceiling)
+        if floor is not None and floor < y_low:
+            y_low = float(floor)
         if x_high <= x_low or y_high <= y_low:
             return
         head_room = (y_high - y_low) * 0.08
@@ -221,17 +368,26 @@ class PeakPanel(pg.PlotWidget):
         self._band.hide()
         self._expected.hide()
         self._clear_area()
-        self.setTitle("")
+        self._title = ("", "", [], theme.foreground())
+        self._type = None
+        self.setTitle(None)
 
     def set_data(self, result: PeakResult, x: np.ndarray, y: np.ndarray,
                  expected: tuple[float, float] | None,
                  internal_standard: tuple[np.ndarray, np.ndarray] | None = None,
-                 ceiling: float | None = None) -> None:
+                 ceiling: float | None = None,
+                 scale_to: float | None = None,
+                 floor: float | None = None) -> None:
+        """
+        `ceiling` is the grid's shared top under **Same Y**; `scale_to` the
+        analyte's height where the panel looks, which the internal standard
+        is rescaled to.
+        """
         self.sample_key = result.sample_key
         found = result.found
         self._curve.setData(x, y, pen=pg.mkPen(FOUND_PEN if found else MISSING_PEN,
                                                width=1.3))
-        self._set_internal_standard(y, internal_standard)
+        self._set_internal_standard(y, internal_standard, scale_to)
         if found:
             self._band.setRegion((result.start_rt, result.end_rt))
             self._band.show()
@@ -240,7 +396,7 @@ class PeakPanel(pg.PlotWidget):
         else:
             self._band.hide()
             self._clear_area()
-        self.fence(x, y, ceiling)
+        self.fence(x, y, ceiling, floor)
         if expected is not None:
             self._expected.setRegion(expected)
             self._expected.show()
@@ -250,16 +406,161 @@ class PeakPanel(pg.PlotWidget):
         if found:
             manual = " ✎" if result.manual else ""
             ratio = f"{result.snr:,.0f}" if result.snr is not None else "—"
-            title = (f"{result.sample_name}{manual}   {result.area:,.0f}"
-                     f"   S/N {ratio}   {result.rt:.2f}")
-            colour = theme.foreground()
+            # in the order they are given up when the panel is too narrow:
+            # the time and the S/N are what the grid is scanned for, the area
+            # is in the table under it
+            self._title = (f"{result.sample_name}{manual}", "",
+                           [f"{result.rt:.2f}", f"S/N {ratio}",
+                            f"{result.area:,.0f}"],
+                           theme.foreground())
         else:
-            title = f"{result.sample_name}   {result.note or 'not found'}"
-            colour = "#e06666" if theme.is_dark() else "#b03030"
-        self.setTitle(title, color=colour, size="8pt")
+            self._title = (result.sample_name, result.note or "not found", [],
+                           "#e06666" if theme.is_dark() else "#b03030")
+        self._type = None
+        self._fit_type()
+
+    # -- type ------------------------------------------------------------------- #
+    def title_text(self) -> str:
+        """The title as it is drawn, after whatever the width took from it."""
+        return getattr(self, "_title_shown", "")
+
+    def title_points(self) -> float:
+        return self._type[0] if self._type else 0.0
+
+    def tick_points(self) -> float:
+        return self._type[1] if self._type else 0.0
+
+    def resizeEvent(self, event):
+        # fitted before the view sizes its plot, not after: pyqtgraph resizes
+        # the view inside its own constructor, before this panel's
+        # attributes exist, hence the guard
+        if "_type" in self.__dict__:
+            self._fit_type()
+        self._fit_scene()
+
+    def _fit_scene(self) -> None:
+        """
+        Size the plot to the viewport, not to the widget.
+
+        pyqtgraph sizes it to the widget, which is right with no frame; the
+        panel's border is a frame, so the plot was two pixels taller than
+        what shows of it, and four on the selected panel — taken off the
+        bottom, which is where the time axis's numbers are.
+        """
+        if self.closed:
+            return
+        if self.autoPixelRange:
+            viewport = self.viewport().size()
+            self.range = QtCore.QRectF(0, 0, viewport.width(), viewport.height())
+        pg.GraphicsView.setRange(self, self.range, padding=0,
+                                 disableAutoPixel=False)
+        self.updateMatrix()
+
+    def _fit_type(self) -> None:
+        """
+        Size the title and the axes for the panel as it is now.
+
+        Every height the panel's layout reserves is measured from the font
+        it will be drawn in: the title row was a fixed 30 pixels and the time
+        axis was sized from the type's first draw, so a short panel pushed
+        its tick labels out of the bottom. Below `MIN_PLOT_PX` of plot the
+        time axis gives up its numbers, never the trace.
+        """
+        width, height = self.width(), self.height()
+        title_pt, tick_pt = panel_type(width, height)
+        tick_font = _font(tick_pt)
+        title_font = _font(title_pt)
+        tick_h = QtGui.QFontMetrics(tick_font).height()
+        title_h = QtGui.QFontMetrics(title_font).height() + 2
+        bottom_h = tick_h + 5
+        values = height - title_h - bottom_h >= MIN_PLOT_PX
+        wanted = (title_pt, tick_pt, values, width, self._top)
+        if self._type == wanted:
+            return
+        self._type = wanted
+
+        bottom, left = self.getAxis("bottom"), self.getAxis("left")
+        for axis in (bottom, left):
+            axis.setStyle(tickFont=tick_font, showValues=True)
+        bottom.setStyle(showValues=values)
+        bottom.setHeight(bottom_h if values else 4)
+        # wide enough for the longest label the axis can print, so it is
+        # never cut on the left and every panel on one scale lines up
+        metrics = QtGui.QFontMetrics(tick_font)
+        widest = max(metrics.horizontalAdvance(f"{self._top:.0f}"),
+                     metrics.horizontalAdvance("0000"))
+        left.setWidth(widest + 10)
+
+        item = self.getPlotItem()
+        name, note, parts, colour = self._title
+        if not name and not note:
+            self.setTitle(None)
+            self._title_shown = ""
+            return
+        shown = self._elided(name, note, parts, title_font, width - 18)
+        self._title_shown = shown
+        # the title is HTML, which folds a run of spaces into one and ran
+        # the area into the S/N
+        self.setTitle(html.escape(shown).replace(TITLE_GAP, "&nbsp;" * 3),
+                      color=colour, size=f"{title_pt:.1f}pt")
+        # a label asks for its text's width as its least, and a plot cannot
+        # be narrower than its title: a title set while the panel was wider
+        # held one panel's plot at 240 pixels in a 179-pixel cell, drawn
+        # off the right-hand edge. The text is already cut to the room.
+        item.titleLabel.setMinimumWidth(0)
+        item.titleLabel.setMaximumHeight(title_h)
+        item.layout.setRowFixedHeight(0, title_h)
+
+    @staticmethod
+    def _elided(name: str, note: str, parts: list[str],
+                font: QtGui.QFont, room: int) -> str:
+        """
+        The longest title that fits `room` pixels: whole fields dropped from
+        the end first, then the name — or the reason nothing was found —
+        cut with an ellipsis.
+        """
+        metrics = QtGui.QFontMetrics(font)
+        gap = TITLE_GAP
+        if note:
+            full = f"{name}{gap}{note}"
+            if metrics.horizontalAdvance(full) <= room:
+                return full
+            return metrics.elidedText(full, QtCore.Qt.TextElideMode.ElideRight,
+                                      max(room, 0))
+        # `parts` come most wanted first and are drawn the other way round,
+        # name · area · S/N · RT, so the time is the last to go
+        for keep in range(len(parts), 0, -1):
+            text = gap.join([name] + parts[:keep][::-1])
+            if metrics.horizontalAdvance(text) <= room:
+                return text
+        tail = f"{gap}{parts[0]}" if parts else ""
+        cut = metrics.elidedText(name, QtCore.Qt.TextElideMode.ElideRight,
+                                 max(room - metrics.horizontalAdvance(tail), 0))
+        return cut + tail
+
+    def show_view(self, span: tuple[float, float], low: float, top: float) -> None:
+        """
+        Put the axes where the grid says, and leave them there.
+
+        Ranges are set outright rather than auto-ranged, so nothing the
+        ViewBox does later — a resize, a trace added, the panel shown —
+        takes a shared scale back to the panel's own.
+        """
+        box = self.getViewBox()
+        box.disableAutoRange()
+        if span[1] > span[0]:
+            box.setXRange(span[0], span[1], padding=0)
+        if top <= low:
+            top = low + 1.0
+        box.setYRange(low, top, padding=0)
+        if abs(top - self._top) > 1e-9:
+            self._top = top
+            self._type = None
+            self._fit_type()
 
     def _set_internal_standard(self, y: np.ndarray,
-                               trace: tuple[np.ndarray, np.ndarray] | None) -> None:
+                               trace: tuple[np.ndarray, np.ndarray] | None,
+                               scale_to: float | None = None) -> None:
         """
         Draw the internal standard behind the analyte, rescaled to it.
 
@@ -273,7 +574,8 @@ class PeakPanel(pg.PlotWidget):
             return
         is_x, is_y = trace
         peak = float(np.max(is_y)) if is_y.size else 0.0
-        target = float(np.max(y)) if y.size else 0.0
+        target = (scale_to if scale_to is not None
+                  else float(np.max(y)) if y.size else 0.0)
         scale = target / peak if peak > 0 and target > 0 else 1.0
         self._is_curve.setData(is_x, is_y * scale)
 
@@ -289,6 +591,8 @@ class PeakPanel(pg.PlotWidget):
             f"border: 2px solid {theme.accent()}; border-radius: 6px;" if selected
             else f"border: 1px solid {theme.line()}; border-radius: 6px;"
         )
+        # the border is a frame, and a wider one is a smaller viewport
+        self._fit_scene()
 
     # -- interaction -------------------------------------------------------------- #
     def mousePressEvent(self, event):
@@ -327,6 +631,9 @@ class PeakReviewGrid(QtWidgets.QWidget):
         self._fetch = None
         self._total = 0
         self._page = 0
+        #: what the items are of — a component — so a refresh of the same
+        #: set can keep its page
+        self._key: str | None = None
         self._selected = ""
         self._shared_y = False
         self._show_is = True
@@ -442,6 +749,8 @@ class PeakReviewGrid(QtWidgets.QWidget):
         panel.set_manual_mode(self._manual_mode)
         panel.getViewBox().sigXRangeChanged.connect(
             lambda _vb, rng, p=panel: self._link(p, rng))
+        panel.getViewBox().sigYRangeChanged.connect(
+            lambda _vb, rng, p=panel: self._link_y(p, rng))
         return panel
 
     def _relayout(self) -> None:
@@ -499,6 +808,22 @@ class PeakReviewGrid(QtWidgets.QWidget):
         finally:
             self._syncing = False
 
+    def _link_y(self, source: PeakPanel, rng) -> None:
+        """
+        Under **Same Y** a zoom in one panel is a zoom in all of them: a
+        wheel over one panel otherwise left it on a scale of its own, and
+        the grid no longer compared heights while still saying it did.
+        """
+        if not self._shared_y or self._syncing:
+            return
+        self._syncing = True
+        try:
+            for panel in self._panels:
+                if panel is not source and panel.sample_key:
+                    panel.getViewBox().setYRange(rng[0], rng[1], padding=0)
+        finally:
+            self._syncing = False
+
     def _set_link_x(self, enabled: bool) -> None:
         self._linked_x = enabled
 
@@ -522,17 +847,36 @@ class PeakReviewGrid(QtWidgets.QWidget):
             panel.set_noise_region(region)
 
     # -- content -------------------------------------------------------------------- #
-    def set_items(self, title: str, items: list[tuple]) -> None:
+    def set_items(self, title: str, items: list[tuple],
+                  key: str | None = None) -> None:
         """
         `items` are (result, x, y, expected window, internal standard trace)
         tuples, one per sample; the last entry may be None.
+
+        `key` says what the items are of, the title when not given. The same
+        key again is a refresh — a manual integration, a reprocessing — and
+        keeps the page and the selection; another key starts at the first
+        page. Every refresh used to start there, so integrating a peak by
+        hand on page 3 put the operator back on page 1 after each drag.
         """
         self.title.setText(title)
+        same = self._is_refresh(title if key is None else key)
         self._items = list(items)
         self._fetch = None
         self._total = 0
-        self._page = 0
-        self._fill()
+        self._show(same)
+
+    def _is_refresh(self, key: str) -> bool:
+        same = key == self._key
+        self._key = key
+        return same
+
+    def _show(self, same: bool) -> None:
+        if same:
+            self.set_page(self._page)      # clipped, if the set got shorter
+        else:
+            self._page = 0
+            self._fill()
 
     def set_lazy(self, title: str, total: int, fetch) -> None:
         """
@@ -543,11 +887,11 @@ class PeakReviewGrid(QtWidgets.QWidget):
         view is built.
         """
         self.title.setText(title)
+        same = self._is_refresh(title)
         self._items = []
         self._fetch = fetch
         self._total = int(total)
-        self._page = 0
-        self._fill()
+        self._show(same)
 
     def clear(self) -> None:
         self.set_items("—", [])
@@ -563,31 +907,39 @@ class PeakReviewGrid(QtWidgets.QWidget):
         else:
             page_items = self._items[start:start + self.page_size]
 
-        ceiling = 0.0
+        views = [self._view_of(item) for item in page_items]
+        ceiling = low_all = 0.0
         if self._shared_y:
-            # a shared ceiling over a lazy source would mean building every
-            # page, so it spans the page in view
-            for item in (self._items or page_items):
-                y = item[2]
-                if y.size:
-                    ceiling = max(ceiling, float(np.max(y)))
+            # the tallest point any panel shows, over the whole set so the
+            # scale holds from page to page; a lazy source would have to
+            # build every page for that, so it spans the page in view
+            source = (views if self._fetch is not None
+                      else [self._view_of(item) for item in self._items])
+            ceiling = max((top for _span, _low, top in source), default=0.0)
+            low_all = min((low for _span, low, _top in source), default=0.0)
 
-        for panel, item in zip(self._panels, page_items):
-            result, x, y, expected = item[:4]
-            is_trace = item[4] if len(item) > 4 and self._show_is else None
-            panel.set_data(result, x, y, expected, is_trace,
-                           ceiling=ceiling * 1.05 if self._shared_y and ceiling > 0
-                           else None)
-            panel.set_noise_region(self._noise_region)
-            panel.set_selected(result.sample_key == self._selected)
-            panel.enableAutoRange()
-            panel.autoRange()
-            span = self._x_range(result, expected)
-            if span is not None:
-                panel.setXRange(*span, padding=0)
-            if self._shared_y and ceiling > 0:
-                panel.setYRange(0, ceiling * 1.05, padding=0)
-            panel.show()
+        # the panels' own range signals would otherwise carry each panel's
+        # span to every other one while the page is being filled
+        self._syncing = True
+        try:
+            for panel, item, (span, low, top) in zip(self._panels, page_items,
+                                                     views):
+                result, x, y, expected = item[:4]
+                is_trace = item[4] if len(item) > 4 and self._show_is else None
+                shared = self._shared_y and ceiling > 0
+                panel.set_data(result, x, y, expected, is_trace,
+                               ceiling=ceiling * HEADROOM if shared else None,
+                               scale_to=top if top > 0 else None,
+                               floor=low_all if shared else None)
+                panel.set_noise_region(self._noise_region)
+                panel.set_selected(result.sample_key == self._selected)
+                if shared:
+                    panel.show_view(span, low_all, ceiling * HEADROOM)
+                else:
+                    panel.show_view(span, low, top * HEADROOM)
+                panel.show()
+        finally:
+            self._syncing = False
         for panel in self._panels[len(page_items):]:
             panel.clear_panel()
             panel.set_selected(False)
@@ -596,6 +948,17 @@ class PeakReviewGrid(QtWidgets.QWidget):
         self.page_label.setText(f"{self._page + 1}/{max(self.page_count, 1)}")
         self.btn_prev.setEnabled(self._page > 0)
         self.btn_next.setEnabled(self._page + 1 < self.page_count)
+
+    def _view_of(self, item) -> tuple[tuple[float, float], float, float]:
+        """The time span a panel shows, and the lowest and highest point in it."""
+        result, x, y, expected = item[:4]
+        span = self._x_range(result, expected)
+        if span is None:
+            finite = np.isfinite(x)
+            span = ((float(np.min(x[finite])), float(np.max(x[finite])))
+                    if finite.any() else (0.0, 1.0))
+        low, top = visible_extent(x, y, span)
+        return span, low, top
 
     def _x_range(self, result, expected) -> tuple[float, float] | None:
         """

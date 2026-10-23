@@ -51,6 +51,27 @@ MARGINAL = "Marginal"
 FAIL = "Fail"
 NOT_APPLICABLE = ""
 
+#: a concentration is the curve's intercept, not the sample's, when the
+#: response it was read from is under this share of the intercept: on a real
+#: batch every prostaglandin normalised to a standard missing from the curve
+#: read the same value in six samples, to the last digit
+INTERCEPT_SHARE = 0.10
+#: an internal standard is not the same spike in the standards and in this
+#: row when the two differ by more than this factor either way. Measured on a
+#: real batch: a standard present in both held within 1.4x (TXB2-d4 ~460 in
+#: the curve, ~440 in the samples); the mismatched ones were 1,500x, 50x and
+#: present in the curve only
+IS_MISMATCH = 10.0
+#: the standard's median in the calibration standards has to clear the
+#: solvents' median by this factor to have been spiked at all; 12-epi-LTB4-d4
+#: on that batch was ~5 counts against ~1, which is integrated noise
+IS_ABOVE_SOLVENT = 10.0
+#: sample types expected to read nothing, for which a concentration below the
+#: curve is the right answer and not a flag
+NOTHING_EXPECTED = ("Blank", "Double Blank", "Solvent")
+#: sample types that are not spiked with the internal standard
+NO_STANDARD_EXPECTED = ("Double Blank", "Solvent")
+
 
 @dataclass
 class PeakResult:
@@ -633,15 +654,20 @@ def compute_ion_ratios(results: ResultsSet, method: ProcessingMethod) -> None:
 
 
 def evaluate_acceptance(results: ResultsSet, entries: list[SampleEntry],
-                        method: ProcessingMethod) -> None:
+                        method: ProcessingMethod,
+                        curves: dict[str, Calibration] | None = None) -> None:
     """
     Score every row against its component's acceptance criteria.
 
     A row with no criteria set gets no status at all rather than a green light:
     a method that has not been told what to check has not checked anything, and
-    saying otherwise would be worse than saying nothing.
+    saying otherwise would be worse than saying nothing. The checks of
+    `quantitation_flags` are the exception — whether a concentration can be
+    reported at all is not a criterion anybody has to switch on — and they
+    run whenever `curves` is given.
     """
     by_key = {e.key: e for e in entries}
+    spikes = standard_spikes(results, entries, method)
     for result in results:
         result.flags = []
         result.status = NOT_APPLICABLE
@@ -701,6 +727,15 @@ def evaluate_acceptance(results: ResultsSet, entries: list[SampleEntry],
         elif result.confidence == MARGINAL:
             checked = True
 
+        if curves is not None:
+            entry = by_key.get(result.sample_key)
+            found = quantitation_flags(result, entry, component, standard,
+                                       curves.get(component.name), spikes,
+                                       method.concentration_unit)
+            if found is not None:
+                checked = True
+                result.flags.extend(found)
+
         if not checked:
             continue
         if result.flags:
@@ -709,6 +744,103 @@ def evaluate_acceptance(results: ResultsSet, entries: list[SampleEntry],
             result.status = MARGINAL
         else:
             result.status = PASS
+
+
+def standard_spikes(results: ResultsSet, entries: list[SampleEntry],
+                    method: ProcessingMethod) -> dict[str, tuple[float, float]]:
+    """
+    Each internal standard's median area over the calibration standards and
+    over the solvents and double blanks — the two figures every row of every
+    component normalised to it is compared against.
+    """
+    kind = {e.key: e.sample_type for e in entries}
+    rows_of = results.by_component()
+    found: dict[str, tuple[float, float]] = {}
+    for component in method.components:
+        if not component.is_internal_standard:
+            continue
+        curve, empty = [], []
+        for row in rows_of.get(component.name, ()):
+            sample_type = kind.get(row.sample_key)
+            if sample_type in CALIBRATION_TYPES:
+                curve.append(row.area)
+            elif sample_type in NO_STANDARD_EXPECTED:
+                empty.append(row.area)
+        if curve:
+            found[component.name] = (float(np.median(curve)),
+                                     float(np.median(empty)) if empty else 0.0)
+    return found
+
+
+def quantitation_flags(result: "PeakResult", entry: SampleEntry | None,
+                       component: Component, standard: Component | None,
+                       curve: Calibration | None,
+                       spikes: dict[str, tuple[float, float]],
+                       unit: str = "") -> list[str] | None:
+    """
+    Why a row's concentration cannot be reported as it stands, or None when
+    there was nothing to check.
+
+    Four things a curve reads back without a word: a concentration below
+    zero; one under the lowest standard used (or over the highest); one that
+    is the curve's intercept, the response being too small to have moved it;
+    and a ratio to an internal standard that was not spiked alike in the
+    standards and in this sample. Blanks and solvents are expected to read
+    nothing, so a concentration under the curve is not flagged on them.
+    """
+    kind = entry.sample_type if entry is not None else ""
+    flags: list[str] = []
+    checked = False
+
+    if standard is not None and kind not in NO_STANDARD_EXPECTED \
+            and standard.name in spikes:
+        checked = True
+        in_curve, in_solvent = spikes[standard.name]
+        here = result.is_area or 0.0
+        if in_curve <= 0 or in_curve < IS_ABOVE_SOLVENT * in_solvent:
+            flags.append(f"IS {standard.name} not above the solvents in the "
+                         f"curve ({in_curve:,.0f} against {in_solvent:,.0f})")
+        elif here <= 0:
+            flags.append(f"IS {standard.name} absent here, {in_curve:,.0f} "
+                         f"in the curve")
+        elif not 1 / IS_MISMATCH <= here / in_curve <= IS_MISMATCH:
+            flags.append(f"IS {standard.name} {here:,.0f} here against "
+                         f"{in_curve:,.0f} in the curve")
+
+    # a standard's own rows carry a curve only because every component is
+    # fitted; its concentration is the spike, not a result
+    value = result.calculated_concentration
+    if value is None or curve is None or not curve.is_fitted \
+            or kind in NOTHING_EXPECTED or component.is_internal_standard:
+        return flags if checked else None
+    checked = True
+    unit = f" {unit}" if unit else ""
+    if value < 0:
+        flags.append("negative concentration")
+    response = result.response(component.calibration_response)
+    intercept = curve.response_at(0.0)
+    if response is not None and intercept \
+            and abs(response) < INTERCEPT_SHARE * abs(intercept):
+        flags.append("the curve's intercept, not the sample's response")
+    levels = [p.concentration for p in curve.used_points]
+    if levels and value >= 0 and kind not in CALIBRATION_TYPES:
+        # the curve describes the vial; the row has been multiplied by the
+        # dilution since, so compare what was injected. And compare the
+        # response with what the lowest standard actually gave, not only the
+        # concentration: a negative intercept carries a response under the
+        # lowest standard's to a concentration above it — LXA4 on a real
+        # batch, 0.9 counts against 3.1 at the lowest level, read 2.6 ng/mL
+        # against an LLOQ of 1.85
+        dilution = (entry.dilution_factor if entry is not None else 1.0) or 1.0
+        injected = value / dilution
+        lowest = min(levels)
+        floor = float(np.median([p.response for p in curve.used_points
+                                 if p.concentration == lowest]))
+        if injected < lowest or (response is not None and response < floor):
+            flags.append(f"< LLOQ ({lowest:g}{unit})")
+        elif injected > max(levels):
+            flags.append(f"> ULOQ ({max(levels):g}{unit})")
+    return flags
 
 
 def build_calibrations(results: ResultsSet, entries: list[SampleEntry],

@@ -42,6 +42,31 @@ The **Flags** column spells out the reasons: `RT +0.312 min`, `S/N 4`,
 `S/N not measured`, `IS 40 below its floor of 100`. Ion ratios and their tolerances are explained on
 [[internal-standards-and-qualifiers]].
 
+## Whether a concentration can be reported
+
+Four checks run on every row with a curve, whether or not any criterion is
+set, because they are not criteria: they say whether the number in
+**Calculated** is a measurement at all. Each fails the row.
+
+| Flag | When |
+|---|---|
+| `negative concentration` | the curve read the response back below zero |
+| `< LLOQ (1.85 ng/mL)` | under the lowest standard the curve uses — by concentration in the vial (the dilution factor taken back out), **or** by response, under what the lowest standard actually gave. The second catches a negative intercept carrying a response under the lowest standard's to a concentration above it |
+| `> ULOQ (400 ng/mL)` | over the highest standard the curve uses |
+| `the curve's intercept, not the sample's response` | the response is under a tenth of the curve's intercept, so the concentration is the intercept read back: every sample gives the same value, and it can be positive and look plausible |
+| `IS PGE2-d4 5,000 here against 3 in the curve` | the internal standard in this row differs from its median over the calibration standards by more than ten times either way — spiked into one and not the other |
+| `IS 5-oxo-ETE-d7 absent here, 107 in the curve` | the standard has no area in this row |
+| `IS 12-epi-LTB4-d4 not above the solvents in the curve (5 against 1)` | the standard's median in the calibration standards is under ten times its median in the solvents and double blanks: it was not spiked at all |
+
+The limits were measured on one eicosanoid batch: a standard present in
+both kept within 1.4× (TXB2-d4, ~460 counts in the curve and ~440 in the
+samples), and the mismatched ones were 1,500×, 50× and present on one side
+only. Blanks, double blanks and solvents are expected to read nothing and
+get none of the concentration flags; solvents and double blanks are not
+spiked and get none of the standard's. A standard's own rows are not
+flagged for its concentration. A project saved before these checks shows
+them once anything is recalculated — **Calibrate** is enough.
+
 ## Reviewing by status
 
 **Show** in the [[results-table]] narrows the table to one status; the

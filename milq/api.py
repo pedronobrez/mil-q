@@ -920,7 +920,8 @@ class Batch:
                       keep_manual=keep_manual,
                       only=None if only is None else list(only),
                       corrections=session.corrections_in_force())
-        evaluate_acceptance(results, session.entries, session.method)
+        evaluate_acceptance(results, session.entries, session.method,
+                            session.calibrations)
         session.set_results(results)
         return self.results
 
@@ -939,7 +940,8 @@ class Batch:
         from their own curve — off by default, because a point removed
         without being seen is a point nobody knows about.
         """
-        from .quantify import apply_calibrations, build_calibrations
+        from .quantify import (apply_calibrations, build_calibrations,
+                               evaluate_acceptance)
 
         session = self.session
         curves = build_calibrations(session.results, session.entries,
@@ -949,6 +951,8 @@ class Batch:
                                     previous=session.calibrations)
         apply_calibrations(session.results, session.entries, session.method,
                            curves)
+        evaluate_acceptance(session.results, session.entries, session.method,
+                            curves)
         session.set_calibrations(curves)
         return {name: _curve(name, curve) for name, curve in curves.items()}
 

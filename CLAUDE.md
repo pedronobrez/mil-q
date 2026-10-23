@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 1.0.5 prepared. 2036 tests. Public repository.**
+**Version 1.0.6 prepared. 2047 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -1563,6 +1563,19 @@ UV detector, is not implemented there) — untested on real Windows.
   first by `validation.acquisition_order`; a partly numbered batch puts the
   numbered injections first and the rest after them by time, never
   interleaved, and `describe_order` says so on the chart.
+- **A concentration that is the curve's intercept looks like a result.**
+  On a real eicosanoid batch every prostaglandin normalised to PGE2-d4 read
+  the same value in six samples to the last digit: the standard was ~5,000
+  counts in the samples and ~3 in the curve, so each ratio was ~0 on the
+  curve's scale and the concentration was −intercept/slope, positive or
+  negative by the intercept's sign. `quantify.quantitation_flags` runs on
+  every row with a curve, criteria or not (`evaluate_acceptance(...,
+  curves)`): negative, `< LLOQ` by injected concentration *or* by response
+  under the lowest standard's (a negative intercept carried LXA4's 0.9
+  counts against 3.1 to 2.6 ng/mL over an LLOQ of 1.85), `> ULOQ`,
+  `INTERCEPT_SHARE`, and the standard against its curve median
+  (`IS_MISMATCH` 10×) and against the solvents (`IS_ABOVE_SOLVENT` 10×). On
+  that batch: 51 of 51 negative unknowns flagged, EPA and AA left clean.
 - **Pinned spectra are traces after the live one.** `explorer.pin_spectrum`
   copies the live trace (`key == "spec"`) with the pane's title as its
   label and appends it; `_with_pins` keeps the live one first, so every
@@ -1803,7 +1816,7 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-2036 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+2047 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
 `tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so

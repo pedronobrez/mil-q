@@ -44,6 +44,32 @@ A coluna **Flags** explicita as razões: `RT +0.312 min`, `S/N 4`,
 `S/N not measured`, `IS 40 below its floor of 100`. As razões iônicas e suas
 tolerâncias são explicadas em [[internal-standards-and-qualifiers]].
 
+## Se uma concentração pode ser reportada
+
+Quatro verificações correm em toda linha com curva, haja ou não critérios
+definidos, porque não são critérios: dizem se o número em **Calculated** é
+uma medição. Cada uma reprova a linha.
+
+| Sinalização | Quando |
+|---|---|
+| `negative concentration` | a curva leu a resposta abaixo de zero |
+| `< LLOQ (1.85 ng/mL)` | abaixo do padrão mais baixo que a curva usa — pela concentração no vial (com o fator de diluição desfeito), **ou** pela resposta, abaixo do que o padrão mais baixo de fato deu. A segunda pega um intercepto negativo que leva uma resposta menor que a do padrão mais baixo a uma concentração acima dele |
+| `> ULOQ (400 ng/mL)` | acima do padrão mais alto que a curva usa |
+| `the curve's intercept, not the sample's response` | a resposta é menor que um décimo do intercepto da curva, então a concentração é o intercepto lido de volta: todas as amostras dão o mesmo valor, que pode ser positivo e parecer plausível |
+| `IS PGE2-d4 5,000 here against 3 in the curve` | o padrão interno nesta linha difere da sua mediana nos padrões da curva por mais de dez vezes, para cima ou para baixo — adicionado num conjunto e não no outro |
+| `IS 5-oxo-ETE-d7 absent here, 107 in the curve` | o padrão não tem área nesta linha |
+| `IS 12-epi-LTB4-d4 not above the solvents in the curve (5 against 1)` | a mediana do padrão nos padrões da curva é menor que dez vezes a sua mediana nos solventes e duplos brancos: não foi adicionado |
+
+Os limites foram medidos num lote de eicosanoides: um padrão presente nos
+dois conjuntos ficou dentro de 1,4× (TXB2-d4, ~460 contagens na curva e
+~440 nas amostras), e os desencontrados estavam a 1.500×, 50× e presentes
+de um lado só. Brancos, duplos brancos e solventes devem ler zero e não
+recebem as sinalizações de concentração; solventes e duplos brancos não
+levam padrão e não recebem as do padrão. As linhas do próprio padrão não
+são sinalizadas pela sua concentração. Um projeto salvo antes destas
+verificações passa a mostrá-las assim que algo é recalculado — basta
+**Calibrate**.
+
 ## Revisão por status
 
 **Show** na [[results-table]] restringe a tabela a um status; o resumo do

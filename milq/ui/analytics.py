@@ -472,7 +472,7 @@ class AnalyticsWorkspace(QtWidgets.QWidget):
 
     def _revalidate(self) -> None:
         evaluate_acceptance(self.session.results, self.session.entries,
-                            self.session.method)
+                            self.session.method, self.session.calibrations)
         self.session.notify_results_changed()
 
     # -- calibration ---------------------------------------------------------------- #
@@ -496,7 +496,8 @@ class AnalyticsWorkspace(QtWidgets.QWidget):
         apply_calibrations(session.results, session.entries, session.method,
                            curves)
         session.calibrations = curves
-        evaluate_acceptance(session.results, session.entries, session.method)
+        evaluate_acceptance(session.results, session.entries, session.method,
+                            curves)
         session.notify_results_changed()
         fitted = sum(1 for c in curves.values() if c.is_fitted)
         if not curves:
@@ -537,7 +538,7 @@ class AnalyticsWorkspace(QtWidgets.QWidget):
         apply_calibrations(self.session.results, self.session.entries,
                            self.session.method, self.session.calibrations)
         evaluate_acceptance(self.session.results, self.session.entries,
-                            self.session.method)
+                            self.session.method, self.session.calibrations)
         self.session.notify_results_changed()
 
     def _auto_outliers(self, tolerance: float) -> None:
@@ -557,7 +558,7 @@ class AnalyticsWorkspace(QtWidgets.QWidget):
         apply_calibrations(self.session.results, self.session.entries,
                            self.session.method, self.session.calibrations)
         evaluate_acceptance(self.session.results, self.session.entries,
-                            self.session.method)
+                            self.session.method, self.session.calibrations)
         self.session.notify_results_changed()
         dropped = sum(1 for p in cleaned.points if not p.used)
         self._report(f"{curve.component}: {dropped} standard(s) excluded, "

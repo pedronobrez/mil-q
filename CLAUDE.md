@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 1.1.0 prepared. 2143 tests. Public repository.**
+**Version 1.1.0 prepared. 2144 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -410,6 +410,15 @@ UV detector, is not implemented there) — untested on real Windows.
   2,364 in the 4th decimal), milx's XIC from vendor centroids on `.wiff`
   (×4.3), milx's noise (MAD of |differences|, ours of signed ones) and
   its nearest-time Pearson.
+- **PyQt6 6.12 dropped `PyQt6.QtPdf`, and CI found it before anyone else.**
+  The weekly run on `main` went red on 2026-11-02 with no change here:
+  pip had taken PyQt6 6.12.0, which ships no `QtPdf` (and there is no
+  separate wheel), so eight tests that read a PDF back failed and
+  `infusion_batch._page_count` reported 0 pages for every report — what a
+  failed write looks like. `PyQt6>=6.5,<6.12` in `pyproject.toml` and in the
+  packaging job's own `pip install`, and `_page_tree_count` reads `/Count`
+  from the PDF's page tree when QtPdf is missing (checked on a Qt 6.12
+  PDF: 4 of 4). Lift the pin when QtPdf is back or packaged separately.
 - **Qt's offscreen platform finds no fonts on Windows.** `QFontDatabase`
   comes up with zero families, every glyph draws as a box, and a batch
   report written through `api.Batch.report` was 47 pages of black
@@ -1993,7 +2002,7 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-2143 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and the bundle-weight tests that need a built bundle), plus 66 under `tests/real/` that run only with `MILQ_REAL_DATA=1` (the IDA and peptide ones also need `MILQ_TEST_WIFF` / `MILQ_TEST_FASTA`, and the peptide one `screen_peptide` / `screen_protein` in the local config). `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+2144 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and the bundle-weight tests that need a built bundle), plus 66 under `tests/real/` that run only with `MILQ_REAL_DATA=1` (the IDA and peptide ones also need `MILQ_TEST_WIFF` / `MILQ_TEST_FASTA`, and the peptide one `screen_peptide` / `screen_protein` in the local config). `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
 `tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so

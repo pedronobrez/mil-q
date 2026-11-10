@@ -467,3 +467,19 @@ def test_the_menu_offers_it_whether_or_not_anything_is_open(qapp):
     window.close()
     window.deleteLater()
     qapp.processEvents()
+
+
+def test_pages_are_counted_without_qtpdf(qapp, tmp_path):
+    """PyQt6 6.12 ships no QtPdf; the count must not fall to 0 silently."""
+    from PyQt6 import QtGui
+
+    path = str(tmp_path / "three.pdf")
+    writer = QtGui.QPdfWriter(path)
+    painter = QtGui.QPainter(writer)
+    for page in range(3):
+        if page:
+            writer.newPage()
+        painter.drawText(100, 100, f"page {page + 1}")
+    painter.end()
+    assert batch._page_tree_count(path) == 3
+    assert batch._page_count(path) == 3

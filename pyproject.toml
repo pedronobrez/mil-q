@@ -13,7 +13,10 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
     "numpy>=1.24",
-    "PyQt6>=6.5",
+    # 6.12 no longer ships PyQt6.QtPdf, which the report writers use to
+    # check the PDF they wrote (and the suite to read it back); there is no
+    # separate wheel for it yet
+    "PyQt6>=6.5,<6.12",
     "pyqtgraph>=0.13",
     "alpharaw>=0.7",
     "pythonnet>=3.0",

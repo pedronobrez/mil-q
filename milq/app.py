@@ -88,7 +88,12 @@ def main(argv: list[str] | None = None) -> int:
     window.show()
     for path in args.files:
         window.load_file(path)
-    if not args.files:
+    # MILQ_UI_PROBE, MILQ_OPEN, MILQ_OPEN_RAW, MILQ_SNAPSHOT: an agent's way
+    # in that does not go through pixels (`ui/probe.py`)
+    from .ui.probe import start_from_environment
+
+    window.probe = start_from_environment(window, app)
+    if not args.files and not getattr(window, "_scripted_start", False):
         window.offer_start()
     status = app.exec()
     _shut_down(app, window)

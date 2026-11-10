@@ -17,6 +17,19 @@ lado dela.
 
 ## O leitor
 
+- **Um `.wiff` é lido no Linux na arquitetura do Apple Silicon.** Numa
+  máquina Ubuntu 22.04 arm64 com Python 3.10, 3 GB de memória e quatro
+  núcleos, como usuário comum sem sudo: `python3 -m milq.bootstrap
+  --install` colocou o .NET 8.0.33 para linux-arm64 em `~/.dotnet` e baixou
+  os assemblies de compatibilidade em 8 s, e o Clearcore2 então abriu um
+  `.wiff` IDA de TripleTOF 5600 — `milq selftest`, `info` e duas chamadas de
+  `xic` (uma filtrada por precursor) deram byte a byte os números que o
+  macOS dá, com 126 MB de memória máxima, 0.6–1.2 s por chamada. Uma
+  armadilha no caminho: o pip e o setuptools do próprio Ubuntu não leem o
+  `pyproject.toml` deste pacote e o instalam como `UNKNOWN-0.0.0`; rode antes
+  `python3 -m pip install --user --upgrade pip setuptools`. Medido num
+  contêiner no Mac, não numa máquina separada; o ICU (`libicu70`) estava
+  instalado, como num Ubuntu de desktop comum.
 - **As builds concordam.** A impressão digital `--digest` a partir do
   código-fonte no macOS, a partir da imagem de disco da CI e a partir do
   instalador do Windows sob o CrossOver é idêntica byte a byte: 405

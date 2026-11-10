@@ -164,3 +164,19 @@ def orbitrap_file(name: str) -> str:
     if not os.path.exists(path):
         pytest.skip(f"{path} is not there")
     return path
+
+
+def ida_wiff() -> str:
+    """
+    One SCIEX IDA acquisition: a survey and dependent product-ion slots.
+
+    Named by `MILQ_TEST_WIFF` (the variable the suite's command-line
+    contract test uses too) or `ida_wiff` in the local map. Any IDA `.wiff`
+    will do; the tests assert what is true of every one.
+    """
+    return _require("ida_wiff", "MILQ_TEST_WIFF", "an IDA .wiff")
+
+
+def fasta() -> str:
+    """A UniProt FASTA holding human β-casein (P05814) — `MILQ_TEST_FASTA`."""
+    return _require("fasta", "MILQ_TEST_FASTA", "a FASTA with P05814")

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Optional: start `milq serve --inbox` at login, so an agent can run MIL-Q
+  commands on this Mac by writing request files into the inbox folder.
+  See the manual's "Command line" page. Edit the three paths below (the
+  output of `which milq`, the inbox folder and the data folder), then:
+
+    cp io.github.pedronobrez.milq-serve.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/io.github.pedronobrez.milq-serve.plist
+
+  `launchctl unload` with the same path stops it. The server writes STATUS.json
+  and log.jsonl into the inbox folder; its own diagnostics go to the two log
+  files named below.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.github.pedronobrez.milq-serve</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/milq</string>
+        <string>serve</string>
+        <string>--inbox</string>
+        <string>/Users/YOU/Documents/mil-jobs</string>
+        <string>--allow-root</string>
+        <string>/Users/YOU/Documents/MIL-data</string>
+        <string>--quiet</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/milq-serve.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/milq-serve.err.log</string>
+</dict>
+</plist>

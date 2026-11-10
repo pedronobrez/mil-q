@@ -962,3 +962,106 @@ def test_closing_lets_go_of_the_file(written):
     file.close()
     os.remove(written)
     assert not os.path.exists(written)
+
+
+# --------------------------------------------------------------------------- #
+# data-dependent acquisition in another program's file
+# --------------------------------------------------------------------------- #
+def _dda_spectrum(index, level, rt, precursor=None, ce=None, high=1000.0):
+    precursor_xml = ""
+    if precursor is not None:
+        energy = ("" if ce is None else
+                  f'<activation><cvParam accession="MS:1000422" name="beam-type '
+                  f'collision-induced dissociation" value=""/><cvParam '
+                  f'accession="MS:1000045" name="collision energy" value="{ce}"/>'
+                  "</activation>")
+        precursor_xml = (
+            "<precursorList count=\"1\"><precursor><selectedIonList "
+            "count=\"1\"><selectedIon>"
+            f'<cvParam accession="MS:1000744" name="selected ion m/z" '
+            f'value="{precursor}"/>'
+            "</selectedIon></selectedIonList>" + energy
+            + "</precursor></precursorList>")
+    return (
+        f'<spectrum index="{index}" id="scan={index}" defaultArrayLength="1">'
+        f'<cvParam accession="MS:1000511" name="ms level" value="{level}"/>'
+        '<scanList count="1"><scan>'
+        f'<cvParam accession="MS:1000016" name="scan start time" '
+        f'value="{rt}" unitName="minute"/>'
+        '<scanWindowList count="1"><scanWindow>'
+        '<cvParam accession="MS:1000501" name="scan window lower limit" value="50"/>'
+        f'<cvParam accession="MS:1000500" name="scan window upper limit" value="{high}"/>'
+        "</scanWindow></scanWindowList>"
+        "</scan></scanList>" + precursor_xml
+        + '<binaryDataArrayList count="2">'
+        + _array_xml([100.0], "MS:1000514", "m/z array")
+        + _array_xml([1.0], "MS:1000515", "intensity array")
+        + "</binaryDataArrayList></spectrum>")
+
+
+def _dda_run(cycles=10, top=3):
+    """A survey, then the top-n of it, each precursor isolated once."""
+    body, index = [], 0
+    for cycle in range(cycles):
+        rt = cycle * 0.05
+        body.append(_dda_spectrum(index, 1, rt))
+        index += 1
+        for rank in range(top):
+            precursor = 400.0 + 7.31 * (cycle * top + rank)
+            # rolling energy and a range that follows the precursor, as an
+            # Orbitrap writes it: neither may split the events
+            body.append(_dda_spectrum(index, 2, rt + 0.001 * (rank + 1),
+                                      precursor, ce=20 + precursor / 50,
+                                      high=round(precursor + 15)))
+            index += 1
+    return "".join(body)
+
+
+def test_data_dependent_ms2_is_one_channel_of_events(tmp_path):
+    """
+    MIL-X shows every data-dependent MS2 of an mzML as one channel, `MS2
+    events (n)`. Grouping by precursor gave one channel per precursor: the
+    TripleTOF 5600 IDA run of `tests/real/test_ida_wiff.py`, written to mzML
+    without our experiment parameters, read as 1,177 channels.
+    """
+    sample = mzml.MzmlFile(_hand_written(tmp_path, spectrum_body=_dda_run(),
+                                         name="dda.mzML")).sample(0)
+    assert [c.info.kind for c in sample.channels] == ["ms1", "dda-events"]
+    events = sample.channels[1]
+    assert events.info.n_scans == 30
+    assert events.info.short_label == "MS2 events (30)"
+    assert events.info.precursor is None and not events.info.is_ms1
+    parents = events.scan_precursors()
+    assert parents[:3] == pytest.approx([400.0, 407.31, 414.62])
+    assert events.info.end_mass == pytest.approx(max(round(p + 15) for p in parents))
+
+
+def test_too_few_precursors_are_still_channels_of_their_own(tmp_path):
+    """Under `DDA_MIN_PRECURSORS` the scans keep today's inference."""
+    sample = mzml.MzmlFile(_hand_written(tmp_path, spectrum_body=_dda_run(3, 3),
+                                         name="few.mzML")).sample(0)
+    assert len(sample.channels) == 1 + 9
+    assert all(c.info.kind in ("ms1", "product") for c in sample.channels)
+
+
+def test_without_a_survey_nothing_is_data_dependent(tmp_path):
+    """The stepped-precursor infusion's shape: MS2 only, many precursors."""
+    body = "".join(_dda_spectrum(i, 2, i * 0.01, 180.30 + 0.02 * i)
+                   for i in range(40))
+    sample = mzml.MzmlFile(_hand_written(tmp_path, spectrum_body=body,
+                                         name="stepped.mzML")).sample(0)
+    assert len(sample.channels) == 40
+
+
+def test_a_run_that_starts_with_surveys_alone_keeps_one_survey(tmp_path):
+    """
+    Before anything is above the trigger a DDA run is survey scans only, and
+    those read as a cycle of one. The survey was two channels; it is one.
+    """
+    lead = "".join(_dda_spectrum(i, 1, i * 0.01) for i in range(8))
+    rest = _dda_run().replace('index="', 'index="1').replace('id="scan=', 'id="scan=1')
+    sample = mzml.MzmlFile(_hand_written(tmp_path, spectrum_body=lead + rest,
+                                         name="lead.mzML")).sample(0)
+    kinds = [c.info.kind for c in sample.channels]
+    assert kinds == ["ms1", "dda-events"]
+    assert sample.channels[0].info.n_scans == 18

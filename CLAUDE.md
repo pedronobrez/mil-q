@@ -9,7 +9,7 @@ history. It records what is true, what was measured, and what is not settled.
 `README.md` is for someone using the application; this is for someone changing
 it.
 
-**Version 1.0.6 prepared. 2047 tests. Public repository.**
+**Version 1.1.0 prepared. 2144 tests. Public repository.**
 
 The repository was recreated on 2026-09-07 to drop a history that showed a
 person's name and unpublished results in its screenshots. Rewriting was not
@@ -251,6 +251,174 @@ UV detector, is not implemented there) — untested on real Windows.
   Open time is unchanged at 1.5 s a file, all of it the header parse
   (`ET` per spectrum, 1.4 s); a sidecar index would make a project reopen
   instant and is the next thing worth doing there.
+- **An IDA dependent slot has no precursor; each of its scans has one.**
+  `wiff._read_info` took a channel's precursor from
+  `MassRangeInfo.FixedMasses`, and for an IDA dependent experiment
+  (`IDAType` Dependent/Confirmation) that is the method's placeholder: on a
+  TripleTOF 5600 HILIC run the eight slots read 1.0 … 8.0, the slot's
+  number; MIL-X's ZenoTOF method reads 829.5 in all 24. What was isolated is
+  `GetMassSpectrumInfo(cycle).ParentMZ` — slot 1 of that run triggered 405
+  of 1,986 cycles on 298 distinct precursors, read in 13 ms; `ParentMZ ≤ 0`
+  and zero data points agreed on every cycle. So `ChannelInfo.kind`
+  (`ms1`, `ida-slot`, `dda-events`, `swath`, `mrm`, `product`, `other`, the
+  CLI contract's words) and `Channel.scan_details()` / `scan_precursors()`
+  on both readers (NaN where nothing was isolated); an `ida-slot` has
+  `precursor = None` and is still not MS1 (`is_ms1` reads `kind` first, then
+  falls back to `precursor is None`, so a hand-built `ChannelInfo` behaves
+  as before). The channel's energy was read from cycle 0, which is
+  untriggered (CE 0): it is now the first triggered scan's (35).
+  `gating.py` reads by precursor across slots: a gated XIC is each
+  channel's own `xic_range` with the other precursors' scans dropped,
+  merged by RT and summed at a shared RT (a cycle's slots share its time);
+  a gated spectrum is accumulated at measured masses ÷ scans, the rule that
+  reproduced SCIEX's own average. Who changed behaviour: `matching` never
+  matches a slot (it used to match on the placeholder — `components_from_
+  sample` made components "1.00" … "8.00"); `precursor._surviving_precursor`
+  reads the gated scans when no fixed channel serves; the Explorer's
+  Explain and library record use `gating.precursor_shown` (the scan's, or
+  none for an average that mixes precursors, which the title now says);
+  `write_mzml` writes each scan's precursor, an isolation window, and skips
+  untriggered cycles; `sample_info` shows the range. Unchanged: the
+  infusion paths (fixed product channels; an IDA slot now reads None there
+  rather than a placeholder), `method_report`, `health`. Writing the export
+  found that dropping untriggered cycles breaks `acquisition_cycles` (the
+  first 21 cycles were survey-only and read as a cycle of one, splitting the
+  survey); a file this application wrote is grouped by its `milq
+  experiment` param, and a channel gets a period only when all its scans
+  sit in one. **`--digest`:** byte-identical on the five `260904_EICs_*`
+  (no IDA); on an IDA file only the slot labels change (`TOF PI  1.00` →
+  `TOF PI  IDA slot 1, CE 35`), every number and hash the same.
+  `tests/test_ida.py` (synthetic, through the real mzML reader, plus the
+  reader protocol by reflection, which no test did before);
+  `tests/real/test_ida_wiff.py` with `MILQ_TEST_WIFF`.
+- **The vendor's centroids are a choice, not the default, because on one
+  batch they match worse.** `wiff.Channel.vendor_centroids(scan | rt_start,
+  rt_end)` is `MSExperiment.GetPeakArray(int)` / `(double, double)` (the
+  double overloads are retention times — checked, `GetPeakArray(rt of cycle
+  600)` gives cycle 600's 4,561 peaks), the fitted apex, 15 ms to marshal;
+  `MzmlChannel.vendor_centroids` returns None. `centroiding.py` reads
+  `MILQ_WIFF_CENTROID=local|sciex|0`, **default `local`** (`0` = `local`
+  here: every consumer needs sticks); `vendor(..., force=True)` is the
+  command line's explicit `--centroid vendor`, whose default is `local`. Used where the spectrum on screen is the reader's own
+  (`plots.Trace.sticks`: Centroid draws them, labels are named with the
+  vendor's apex within `SNAP_DA` 0.02 of the local peak, Explain and the
+  library record take them; `api.Channel.centroids()`), never on a
+  background-subtracted, Δ, or spray-masked whole-run spectrum, and never
+  in quantitation. Infusion reports still centroid their masked averages
+  locally. Measured: TripleTOF 5600 survey — 4,561 vs 13,764 peaks, heights
+  equal (median 1.00 over the 200 tallest; MIL-X saw 1.27 on ZenoTOF), every
+  label moved, median 1.5 ppm, p90 4.1, max 11.8. Sphingolipid batch,
+  inj 01 vs 02 at each product channel's apex: the same fragments differ
+  by a median 7.0 ppm local vs 10.5 vendor (83% vs 73% within 20 ppm), and
+  an own record from inj 01 is first for inj 02 on 16/20 channels local vs
+  9/20 vendor. The brief asked for the vendor by default on principle; on
+  that measurement the user chose local (2026-11-09). The peptide screen
+  went the other way (more peptides accepted at 1% with vendor centroids,
+  the validation peptide at q < 0.01 either way; figures in
+  `NOTES.local.md`) — so the switch is kept and documented, not removed. Pos_GLDB (glycerolipids) gave no
+  meaningful hit for either on HILIC metabolites or sphingolipids, so it
+  measured nothing; MassBank was not on the machine.
+- **The command line is the suite's contract, and `milq` without a
+  subcommand is still the window.** `docs/CLI-CONTRACT.md` is byte-identical
+  to MIL-X's; `cli.main` dispatches a first argument in `SUBCOMMANDS` to the
+  contract and anything else to `app.main` (the only path that imports Qt —
+  a subprocess test asserts no `PyQt*`/`pyqtgraph` module is loaded by
+  `milq info`). `contract.py` is the one implementation (documents as
+  dicts in contract order), `cli.run(command, args)` adds the envelope,
+  `serve.py` calls `cli.run` in-process, `api.command()`/`api.xic()`…
+  return `api.Document` whose `json()` is the CLI's bytes (tested).
+  Choices worth knowing: `xic --summary` follows MIL-X's printed
+  definitions (`contract.DEFINITIONS`): apex = the trace's tallest point,
+  bounds to ≤5% of it or the valley before a rise of a tenth, trapezoid
+  with no baseline. It was `processing.detect_peaks` first, and the
+  cross-check of 2026-11-09 showed why not: a baseline-subtracted height
+  that is not in the trace (740,118 vs the maximum 778,604) and, on a
+  jagged IDA survey, an apex on a later tooth. With the change the
+  synthetic study agrees with milx to every digit. FWHM is
+  interpolated and null when the trace ends above half height; S/N is
+  `estimate_noise`'s, null when unmeasurable, and the document names the
+  convention. `--reference` correlates on the reference peak's span with
+  the target interpolated onto its times. `spectrum --centroid vendor`
+  falls back to local (and says so in `notes`) for anything the vendor
+  never saw: an mzML, a subtraction, a merged/gated source. `isotopes`
+  reads masses with `precursor.in_spectrum` on a ±max(3·tol, 0.1) slice —
+  on the whole spectrum its centre-of-gravity walk crossed 120 Da of
+  sticks. `serve`: allow-list `serve.ALLOWED`; read keys `READ_KEYS` and
+  write keys `WRITE_KEYS` are path-checked after `realpath`; a bare output
+  name lands in `outbox/<id>/`; nothing outside `outbox/` is overwritten;
+  the timeout abandons a daemon thread (Python cannot kill one — its result
+  is dropped, and with `--max-jobs 1` the next job waits for nothing).
+  `sidecar.py`: mzML header pickles (the 1.4 s of an open) and per-scan
+  point counts (`Channel.scan_points()`, a new protocol method: one vendor
+  call per cycle), keyed on path+size+mtime(+`.wiff.scan`). Measured on the
+  IDA run: `scans` 3.8 s cold → 1.3–1.8 s warm (≈1 s of every `.wiff` call
+  is starting .NET; `serve` keeps it up); `info` on its 70 MB mzML 1.4 →
+  0.5 s. `write_mzml(centroid=…)` is `convert --centroid`. **Windows:** the
+  bundle is windowed (`console=False`), and a windowed PyInstaller program
+  has `sys.stdout` None there, so `MIL-Q.exe info …` prints nothing
+  (`cli._ensure_streams` makes it exit with its code instead of crashing);
+  the CI bundle step runs the contract only on macOS and Linux, and the
+  Windows command line is `pip install`. A console executable beside the
+  windowed one is the fix still owed. `serve.py` must not import a POSIX
+  module at the top (`resource` did, and broke it on Windows; a test
+  guards it). The contract's
+  cross-tool test against `milx` was not run: MIL-X's CLI was not built on
+  this machine and its synthetic-mzML tool lives in that repository.
+- **A peptide screen is honest only against its own decoys, and that is all
+  it claims.** `peptides.py` (+ `peptides_cli.py`, `milq peptide …`):
+  monoisotopic residue table, the brief's modification syntax (`pE` is the
+  pyroGlu *residue*, 111.032028 from Q or E alike; `[pyroGlu]`/`pGlu-` the
+  modification on an N-terminal Q/E), b/a/y, b−H2O, y−NH3, internal b-type
+  and immonium ions; `annotate` gives a bond-by-bond coverage map;
+  `digest` is non-specific with every subset of modification sites up to
+  `max_mods`; `screen` refines each MS2 scan's own precursor from the
+  survey (`precursor.in_spectrum` on a ±0.06 slice), tries isotope errors
+  −1/0/+1 and charges 1–4 where the scan states none, scores b/y/a/losses
+  at 20 ppm on the 150 tallest centroids, keeps the best candidate per scan
+  (target or decoy), and computes q-values from reversed proteins. Not
+  tuned on the validation peptide. Measured on real TripleTOF 5600 IDA
+  acquisitions with one protein: the validation peptide at q < 0.01 in all
+  four files; 2,364 scans × 72,406 targets + decoys in 11 s, 10,180 scans
+  in 44 s at 450 MB (75 s with `sciex` centroids). Which acquisitions,
+  which peptide and the figures are in `NOTES.local.md` (untracked: it is
+  somebody's unpublished study) and in `tests/real/data.local.json`. A
+  one-protein FDR says "that protein, not chance", not "nothing else
+  explains it" — the page says so. Two synthetic-data traps
+  met writing the tests: the screen centroids each scan, so a fixture of
+  bare sticks matches nothing (real TOF scans are profile) — the fixture
+  draws profile peaks.
+- **What the MIL-Q × MIL-X cross-check of 2026-11-09 changed here.**
+  (Issues pedronobrez/mil-q #1–#6; milx 1.1.0 at 0e65d78.) The `xic`
+  summary now follows MIL-X's definitions (above). A merged source's
+  spectrum (gated, ms2-all) merges sticks across scans within
+  `gating.MERGE_DA` (0.01) at the intensity-weighted m/z, mean intensity —
+  `_accumulate` is right only for profile scans of one experiment's axis,
+  and split one ion into a stick per scan (5,825 where the mean is
+  64,368); profile scans asked for centroids are centroided one by one
+  first, which needs `ChannelInfo.centroided` (new). `--scan N` on a
+  merged source is its N-th scan, not the average. The DDA rule also
+  accepts a typical precursor in ≤ `DDA_MAX_SHARE` (0.5) of the surveys
+  (no dynamic exclusion), and `_without_lone_periods` drops any period an
+  experiment of which also runs outside every cycle (the survey had split
+  474/9/10/8). `convert` writes precursors with `repr` (six decimals moved
+  1,220 of 7,416 parents in the 4th). `cli._checked_args` maps a request's
+  aliases (`files`→`paths`, `path`→`file`) and refuses unknown names — an
+  inbox request with `files` used to answer zero rows, exit 0. After the
+  fixes the synthetic study agrees with milx on apex, height, area, FWHM,
+  points and batch rows to every digit; what still differs is decided on
+  the contract or the MIL-X side: field names, the rounding of RT (167 of
+  2,364 in the 4th decimal), milx's XIC from vendor centroids on `.wiff`
+  (×4.3), milx's noise (MAD of |differences|, ours of signed ones) and
+  its nearest-time Pearson.
+- **PyQt6 6.12 dropped `PyQt6.QtPdf`, and CI found it before anyone else.**
+  The weekly run on `main` went red on 2026-11-02 with no change here:
+  pip had taken PyQt6 6.12.0, which ships no `QtPdf` (and there is no
+  separate wheel), so eight tests that read a PDF back failed and
+  `infusion_batch._page_count` reported 0 pages for every report — what a
+  failed write looks like. `PyQt6>=6.5,<6.12` in `pyproject.toml` and in the
+  packaging job's own `pip install`, and `_page_tree_count` reads `/Count`
+  from the PDF's page tree when QtPdf is missing (checked on a Qt 6.12
+  PDF: 4 of 4). Lift the pin when QtPdf is back or packaged separately.
 - **Qt's offscreen platform finds no fonts on Windows.** `QFontDatabase`
   comes up with zero families, every glyph draws as a box, and a batch
   report written through `api.Batch.report` was 47 pages of black
@@ -289,7 +457,20 @@ UV detector, is not implemented there) — untested on real Windows.
   in it is the entry. This file is a cycle of 44 run 339 times then one of 37
   run 238 times — 44 + 37 = 81 channels, 44·339 + 37·238 = 23,722 spectra.
   Data-dependent acquisition has no cycle; a cycle must repeat four times to
-  be believed, and otherwise the properties are all there is.
+  be believed, and otherwise the properties are all there is — **except for
+  data-dependent MS2**, which `_data_dependent` collects into one
+  `dda-events` channel (`MS2 events (n)`): no cycle position, survey scans
+  present, ≥ `DDA_MIN_PRECURSORS` (10) distinct precursors at a median ≤
+  `DDA_MAX_REPEATS` (3) scans each, keyed by level/polarity/activation only
+  (DDA rolls the CE and an Orbitrap sets the range from the precursor). The
+  TripleTOF 5600 IDA run exported without our experiment params read as
+  1,177 channels; now survey + 2,364 events. Found doing it:
+  `acquisition_cycles` takes the survey-only scans before the first trigger
+  for a cycle of one and split the survey (21 + 1,965); `_without_lone_
+  periods` forgets a length-1 period whose key also runs outside any cycle.
+  The stepped-precursor Orbitrap infusion has no survey and keeps 82
+  channels (asserted synthetically here — the real file was not on the
+  machine). No msconvert mzML of an IDA run was available to try.
 - **The run's total ion chromatogram is summed by cycle, not by time.** The
   experiments of one cycle are measured one after another, so the union of
   their times is one point per spectrum — 23,722 where the instrument reports
@@ -1723,8 +1904,13 @@ view (`contour.py`), and integration algorithms with a comparison mode
   and proves the bundle starts and reads a `.wiff` on a GitHub runner; nobody
   has installed the MSI on a machine. The source tree has now run on a
   Windows 11 desktop (suite, window, mzML batch): see *Verified facts*.
-- **Reading a `.wiff` has only ever been done on macOS.** Linux and Windows
-  run the suite and start the application; the SCIEX path is checked only as
+- **Reading a `.wiff` has been done on macOS and on Linux arm64 only.**
+  Ubuntu 22.04 arm64 (a Colima container on the Mac, 3 GB, 4 cores, no
+  sudo, Python 3.10): bootstrap installs .NET 8.0.33 linux-arm64, and the
+  TripleTOF 5600 IDA file reads with byte-identical `milq` output (needs
+  `pip install --upgrade pip setuptools` first, or the package installs as
+  `UNKNOWN-0.0.0`). Windows runs the suite and starts the application;
+  the SCIEX path there is checked only as
   far as "the assemblies load" — on the Windows 11 desktop they load on
   .NET Framework 4.8 with no .NET 8 present, and `python -m
   milq.bootstrap --install` used to refuse that machine for having no
@@ -1816,7 +2002,7 @@ package produces installers named after the wrong one.
 
 ## Test suite
 
-2047 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and 4 bundle-weight tests that need a built bundle), plus 56 under `tests/real/` that run only with `MILQ_REAL_DATA=1`. `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
+2144 tests, three skipped (the layered icon document, which 1.0.0 does not ship, and the bundle-weight tests that need a built bundle), plus 66 under `tests/real/` that run only with `MILQ_REAL_DATA=1` (the IDA and peptide ones also need `MILQ_TEST_WIFF` / `MILQ_TEST_FASTA`, and the peptide one `screen_peptide` / `screen_protein` in the local config). `QT_QPA_PLATFORM=offscreen python3 -m pytest -q`.
 
 `ui/settings.py` is the one place a settings object is made, and
 `tests/conftest.py` sets `MILQ_SETTINGS` before any widget exists so

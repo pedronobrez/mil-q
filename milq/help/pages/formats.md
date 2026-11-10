@@ -132,6 +132,26 @@ the experiment. The file this was developed against is a cycle of 44 run
 times to be believed; data-dependent acquisition has no cycle and falls back
 to the scan properties.
 
+Data-dependent MS2 is the exception to grouping by properties, because its
+precursor is chosen per scan: grouped by precursor, the TripleTOF 5600 IDA
+run of [[how-wiff-is-read]] written to mzML by another program read as
+**1,177 channels**. Such scans become one channel, **MS2 events (n)**, each
+scan keeping its own precursor, as MIL-X shows them. The scans are taken as
+data-dependent when they have no place in a cycle, the run has survey scans,
+and their precursors take at least ten distinct values, the typical one
+isolated in at most half of the survey scans (a DIA window or an
+unscheduled targeted list is acquired in nearly every cycle; a
+data-dependent precursor only while it elutes, with or without dynamic
+exclusion). A stretch where the order happens to repeat — survey, A,
+survey, A while one compound elutes alone — is not taken for a cycle. The rolling collision
+energy and the scan range that follow the precursor do not split them. A
+run with no survey — a stepped-precursor infusion — keeps one channel per
+precursor, and SWATH windows and scheduled methods have a cycle and are
+read as before. A survey that starts the run alone, before anything
+triggers, is not taken for a cycle of one. A file this application wrote
+names each scan's experiment, so an IDA run exported here comes back as its
+slots.
+
 The **run's** total ion chromatogram follows the same answer. Where there is
 a cycle, the experiments of one period are added cycle by cycle, because
 that is what the instrument reports — 577 points for those 23,722 spectra,

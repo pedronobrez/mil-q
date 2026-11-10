@@ -63,6 +63,10 @@ __all__ = [
     "Fragment", "InfusionDocument", "InfusionLine", "Library", "Match",
     "Result", "Results", "Spectrum", "Table",
     "explain", "headless", "infusion_report", "open",
+    # the command-line contract (docs/CLI-CONTRACT.md): one function per
+    # subcommand, each returning the `Document` `milq <subcommand>` prints
+    "Document", "command", "selftest", "info", "scans", "xic", "spectrum",
+    "isotopes", "batch_xic", "convert",
 ]
 
 
@@ -255,6 +259,18 @@ class Channel:
     n_scans: int
     is_ms1: bool
     reader: object = field(default=None, repr=False, compare=False)
+    #: what the channel is (`ms1`, `ida-slot`, `dda-events`, `swath`, `mrm`,
+    #: `product`, `other`); an `ida-slot` or `dda-events` channel has no
+    #: `precursor` — its precursor is per scan, `scan_precursors()`
+    kind: str = ""
+
+    def scan_precursors(self) -> np.ndarray:
+        """The precursor each scan isolated, NaN where it isolated none."""
+        reader = getattr(self.reader, "scan_precursors", None)
+        if reader is not None:
+            return np.asarray(reader(), dtype=float)
+        n = len(self.reader.rt) if self.reader is not None else self.n_scans
+        return np.full(n, np.nan if self.precursor is None else self.precursor)
 
     def tic(self) -> Chromatogram:
         """This channel's total ion chromatogram."""
@@ -284,7 +300,8 @@ class Channel:
     def spectrum(self, scan: int, add_zeros: bool = True) -> Spectrum:
         """One scan, by its index. `add_zeros` restores a profile's zeros."""
         mz, y = self.reader.spectrum(int(scan), add_zeros)
-        return self._spectrum(mz, y, f"{self.label} · scan {int(scan)}", None)
+        return self._spectrum(mz, y, f"{self.label} · scan {int(scan)}", None,
+                              scan=int(scan))
 
     def average(self, rt0: float, rt1: float,
                 add_zeros: bool = True) -> Spectrum:
@@ -295,6 +312,33 @@ class Channel:
                               f"{self.label} · {window[0]:.2f}–{window[1]:.2f} min",
                               window)
 
+    def centroids(self, scan: int | None = None, rt0: float | None = None,
+                  rt1: float | None = None) -> Spectrum:
+        """
+        One scan, or the average between two times, as centroids — the
+        instrument's peak finder where the reader has one and
+        `MILQ_WIFF_CENTROID` allows it (`centroiding`), the local one
+        otherwise. `Spectrum.centroid()` is always the local one: a spectrum
+        no longer knows the scans it came from.
+        """
+        from .centroiding import centroids
+
+        if scan is not None:
+            profile = self.spectrum(int(scan), add_zeros=False)
+            found = centroids(self.reader, profile.mz, profile.intensity,
+                              scan=int(scan))
+        elif rt0 is not None and rt1 is not None:
+            profile = self.average(rt0, rt1, add_zeros=False)
+            found = centroids(self.reader, profile.mz, profile.intensity,
+                              rt_range=profile.rt_range)
+        else:
+            raise ValueError("give a scan, or rt0 and rt1")
+        from dataclasses import replace
+
+        return replace(profile, mz=np.asarray(found[0], dtype=float),
+                       intensity=np.asarray(found[1], dtype=float),
+                       centroided=True)
+
     def scan_at(self, rt: float) -> int:
         """The scan nearest a retention time."""
         return int(self.reader.scan_at_rt(float(rt)))
@@ -304,11 +348,21 @@ class Channel:
         return float(self.reader.rt_at_scan(int(scan)))
 
     def _spectrum(self, mz, intensity, label: str,
-                  window: tuple[float, float] | None) -> Spectrum:
+                  window: tuple[float, float] | None,
+                  scan: int | None = None) -> Spectrum:
+        precursor = self.precursor
+        if self.kind in ("ida-slot", "dda-events") and self.reader is not None:
+            # per scan: the scan's own, or none for an average that mixes
+            from .gating import precursor_shown
+
+            precursor = precursor_shown(
+                self.reader, scan=scan,
+                rt0=None if window is None else window[0],
+                rt1=None if window is None else window[1])
         return Spectrum(np.asarray(mz, dtype=float),
                         np.asarray(intensity, dtype=float),
                         label=label, rt_range=window,
-                        precursor=self.precursor, polarity=self.polarity,
+                        precursor=precursor, polarity=self.polarity,
                         collision_energy=self.collision_energy,
                         scans=self.n_scans)
 
@@ -330,6 +384,7 @@ def _channel(reader) -> Channel:
         n_scans=int(getattr(info, "n_scans", 0) or 0),
         is_ms1=bool(getattr(info, "is_ms1", False)),
         reader=reader,
+        kind=str(getattr(info, "kind", "") or ""),
     )
 
 
@@ -1726,3 +1781,97 @@ def _infusion_line(run: Acquisition, report, annotation, match) -> InfusionLine:
         annotation=annotation, match=match,
         note=str(getattr(report, "survivor_note", "") or ""),
     )
+
+
+# --------------------------------------------------------------------------- #
+# the command-line contract, for scripts
+# --------------------------------------------------------------------------- #
+@dataclass(frozen=True)
+class Document:
+    """
+    One `mil-cli/1` document: exactly what `milq <subcommand>` prints, as a
+    dict, with the subcommand's name. `json()` is the printed text, byte for
+    byte; `table()` the `--format tsv` one.
+    """
+
+    command: str
+    data: dict = field(repr=False)
+
+    def json(self) -> str:
+        from .cli import dumps
+
+        return dumps(self.data)
+
+    def table(self) -> str:
+        from .cli import tsv
+
+        return tsv(self.data)
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+
+def command(name: str, **args) -> Document:
+    """
+    Any subcommand by its name and its flags' names without dashes —
+    `command("xic", file=path, mz=[627.8457], source="gated:627.8457")`.
+    Raises `contract.ContractError` where the command line would exit 2–5.
+    """
+    from .cli import run
+
+    return Document(name, run(name, args))
+
+
+def selftest(files=()) -> Document:
+    """`milq selftest`: what works on this machine."""
+    return command("selftest", files=list(files))
+
+
+def info(path, sample=None) -> Document:
+    """`milq info`: samples and channels."""
+    return command("info", file=str(path), sample=sample)
+
+
+def scans(path, sample=None, source=None, rt=None, parent=None,
+          ms_level=None, count: bool = False) -> Document:
+    """`milq scans`: the scan table, each scan with its own precursor."""
+    return command("scans", file=str(path), sample=sample, source=source, rt=rt,
+                   parent=parent, ms_level=ms_level, count=count)
+
+
+def xic(path, mz, tol: float = 0.01, unit: str = "Da", source: str = "ms1",
+        rt=None, smooth: float = 0.0, trace: bool = False, reference=None,
+        sample=None) -> Document:
+    """`milq xic`: the summary of each m/z (and its trace when asked)."""
+    return command("xic", file=str(path), mz=mz, tol=tol, unit=unit,
+                   source=source, rt=rt, smooth=smooth, trace=trace,
+                   reference=reference, sample=sample)
+
+
+def spectrum(path, source: str = "ms1", scan=None, rt=None, subtract=(),
+             centroid: str = "local", top=None, min_rel: float = 0.01,
+             msp=None, sample=None) -> Document:
+    """`milq spectrum`: one spectrum as a peak list, with the scans used."""
+    return command("spectrum", file=str(path), source=source, scan=scan, rt=rt,
+                   subtract=list(subtract), centroid=centroid, top=top,
+                   min_rel=min_rel, msp=msp, sample=sample)
+
+
+def isotopes(path, mz: float, rt, charge: int = 1, formula: str = "",
+             tol: float = 0.01, sample=None) -> Document:
+    """`milq isotopes`: the measured envelope against theory."""
+    return command("isotopes", file=str(path), mz=mz, rt=rt, charge=charge,
+                   formula=formula, tol=tol, sample=sample)
+
+
+def batch_xic(paths, mz, tol: float = 0.01, unit: str = "Da",
+              source: str = "ms1", rt=None, rt_window=None) -> Document:
+    """`milq batch-xic`: one row per file, sample and m/z."""
+    return command("batch-xic", paths=[str(p) for p in paths], mz=mz, tol=tol,
+                   unit=unit, source=source, rt=rt, rt_window=rt_window)
+
+
+def convert(path, out=None, centroid=None, sample=None) -> Document:
+    """`milq convert`: an mzML that keeps every scan's precursor."""
+    return command("convert", file=str(path), out=out, centroid=centroid,
+                   sample=sample)

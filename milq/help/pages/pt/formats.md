@@ -141,6 +141,27 @@ repete os seus experimentos em um ciclo fixo, de modo que a posição no ciclo
 se repetir pelo menos quatro vezes para ser acreditado; a aquisição
 dependente de dados não tem ciclo e recai sobre as propriedades dos scans.
 
+O MS2 dependente de dados é a exceção ao agrupamento por propriedades,
+porque o seu precursor é escolhido scan a scan: agrupada por precursor, a
+corrida IDA de TripleTOF 5600 de [[how-wiff-is-read]] escrita em mzML por
+outro programa virou **1.177 canais**. Esses scans viram um só canal,
+**MS2 events (n)**, cada scan com o seu próprio precursor, como o MIL-X os
+mostra. Os scans são tomados como dependentes de dados quando não têm lugar
+num ciclo, a corrida tem scans de survey, e os seus precursores assumem pelo
+menos dez valores distintos, o típico isolado em no máximo metade dos scans
+de survey (uma janela DIA ou uma lista direcionada sem agendamento é
+adquirida em quase todo ciclo; um precursor dependente de dados só enquanto
+elui, com ou sem exclusão dinâmica). Um trecho em que a ordem por acaso se
+repete — survey, A, survey, A enquanto um composto elui sozinho — não é
+tomado por um ciclo. A energia de colisão variável e a faixa
+de varredura que acompanham o precursor não os separam. Uma corrida sem
+survey — uma infusão com precursor em degraus — mantém um canal por
+precursor, e janelas SWATH e métodos agendados têm ciclo e são lidos como
+antes. Um survey que começa a corrida sozinho, antes de algo disparar, não é
+tomado por um ciclo de um. Um arquivo escrito por esta aplicação nomeia o
+experimento de cada scan, de modo que uma corrida IDA exportada daqui volta
+como os seus slots.
+
 O cromatograma de íons totais **da corrida** segue a mesma resposta. Onde há
 um ciclo, os experimentos de um período são somados ciclo a ciclo, porque é
 isso que o instrumento reporta — 577 pontos para aqueles 23.722 espectros, e

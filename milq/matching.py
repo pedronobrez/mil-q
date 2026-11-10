@@ -29,6 +29,14 @@ def match_channel(sample, component: Component, tolerance: float = PRECURSOR_MAT
 
     Falls back to a full-scan channel whose mass range contains the target, and
     returns None when nothing fits.
+
+    A data-dependent channel — an IDA dependent slot, an mzML's DDA events —
+    has no precursor of its own (`info.precursor` is None) and is never
+    matched: the `FixedMasses` such a slot declares is the method's
+    placeholder (1.0 … 8.0 on a TripleTOF 5600, 829.5 in every slot of a
+    ZenoTOF method), and matching on it served a component from a slot that
+    isolated hundreds of other things. Product-ion evidence for such a
+    sample is read by precursor (`gating`).
     """
     target = component.target_mz
     if target <= 0:
@@ -69,6 +77,7 @@ def components_from_sample(sample, adduct: str = "") -> list[Component]:
 
     Every product-ion channel becomes one component named after its precursor,
     with the retention time left blank so the first processing run can find it.
+    A data-dependent channel has no precursor of its own and gives none.
     Saves transcribing an 80-transition method by hand; names and fragments are
     meant to be edited afterwards.
     """

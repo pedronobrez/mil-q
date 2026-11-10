@@ -69,6 +69,9 @@ class ChromatogramArea(QtWidgets.QWidget):
     # -- panes ---------------------------------------------------------------- #
     def _add_view(self, key: str) -> ChromatogramView:
         view = ChromatogramView()
+        from . import chart_export
+
+        chart_export.install(view, "chromatogram")
         self._apply_options(view)
         view.sigClicked.connect(lambda x, v=view: self._on_clicked(v, x))
         view.sigRangeSelected.connect(lambda a, b, v=view: self._on_selected(v, a, b))

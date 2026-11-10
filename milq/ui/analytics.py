@@ -696,6 +696,13 @@ class AnalyticsWorkspace(QtWidgets.QWidget):
         noise = menu.addAction("Set noise region from the shaded range")
         revert = menu.addAction("Back to automatic integration")
         revert.setEnabled(result is not None and result.manual)
+        panel = next((p for p in self.grid.views if p.sample_key == sample_key), None)
+        if panel is not None:
+            from . import chart_export
+
+            menu.addSeparator()
+            menu.addAction(chart_export.action_for(
+                panel, f"{component.name} {sample_key.split('|')[0]}", menu))
         chosen = menu.exec(position)
         if chosen is noise:
             self._noise_from_panel(sample_key)

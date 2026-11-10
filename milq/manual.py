@@ -150,6 +150,7 @@ INDEX: tuple[tuple[str, tuple[str, ...]], ...] = (
     )),
     ("Reference", (
         "projects-and-files", "export", "command-line", "python-api",
+        "environment-variables", "peptides",
         "keyboard-shortcuts",
         "how-wiff-is-read", "measured-facts", "integration",
         "design-principles",

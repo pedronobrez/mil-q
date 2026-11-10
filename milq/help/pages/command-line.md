@@ -1,10 +1,198 @@
 ---
 title: Command line
 ---
-The installed application and the source tree answer to the same
-arguments. From the source tree the command is `python3 run.py`; from an
-installer it is the executable inside the application — on macOS
-`/Applications/MIL-Q.app/Contents/MacOS/MIL-Q`.
+MIL-Q answers on the command line in two ways. **`milq <subcommand>`** is
+the suite's shared command-line contract — the same subcommands, flags and
+output as MIL-X's `milx`, made for scripts and agents, with no window and
+no Qt (it runs over SSH and in a small Linux VM). **`milq` with no
+subcommand** is the application: it opens the window, or runs one of its
+own reports (`--selftest`, `--digest`, `--infusion-report`). From the
+source tree the command is `python3 run.py`; an installed `pip install .`
+puts `milq` on the path. On macOS and Linux the installed application's own
+executable takes the subcommands too
+(`/Applications/MIL-Q.app/Contents/MacOS/MIL-Q info run.wiff`). On Windows it
+does not print them: `MIL-Q.exe` is a windowed program, which Windows gives
+no output stream, so there the command line is `pip install` — or
+`python run.py` from the source.
+
+## The contract subcommands
+
+The contract is `docs/CLI-CONTRACT.md` in both repositories, byte for byte
+the same; where the two programs differ, the contract wins. In short:
+
+```
+milq selftest [FILES...]
+milq info FILE [--sample N|NAME]
+milq scans FILE [--source S] [--rt A:B] [--parent MZ[:TOL]] [--ms-level N] [--count]
+milq xic FILE --mz LIST [--tol 0.01] [--unit Da|ppm] [--source S] [--rt A:B]
+         [--smooth N] [--summary | --trace] [--reference MZ@SOURCE]
+milq spectrum FILE [--source S] (--scan N | --rt A:B) [--subtract A:B]...
+         [--centroid vendor|local|none] [--top N] [--min-rel 0.01] [--msp PATH]
+milq isotopes FILE --mz MZ [--charge Z] --rt A:B [--formula F] [--adduct A]
+milq batch-xic PATHS... --mz LIST [--tol] [--unit] [--source] [--rt-window C±W]
+milq convert FILE [--out PATH] [--centroid vendor|local]
+milq serve (--stdio | --inbox DIR) [--allow-root DIR]... [--idle-exit MIN]
+```
+
+`milq peptide …` — masses, fragments, annotation, digestion and a
+target–decoy screen of peptides — is on its own page: [[peptides]].
+
+Every subcommand also takes `--format json|tsv` (JSON by default; TSV is the
+document's main table), `--quiet` (nothing on stderr but errors), `--cache
+DIR` (where the sidecar index is kept) and `--require` (exit 4 when nothing
+is found).
+
+A **source** says which scans are read: `ms1` (the survey), `channel:N`,
+`ms2-all` (every product-ion scan, merged by time), or `gated:MZ[:TOL]` —
+only the product-ion scans whose own precursor lies within TOL (0.05 Da by
+default) of MZ, from every channel. The gate is what data-dependent data
+needs: see [[how-wiff-is-read]] and [[manual-xic]].
+
+Every JSON document starts with `schema` (`mil-cli/1`), `tool`, `version`,
+`command` and `input` (the absolute path and the sample). Masses are given
+to 4 decimals (6 for theoretical values), retention times in minutes to 4,
+intensities as the reader reports them, always with a point for the decimal
+mark. The same call gives the same bytes. An error is a JSON document on
+stderr, `{"schema": "mil-cli/1", "error": "...", "message": "..."}`, and an
+exit code: **2** bad arguments, **3** a file that cannot be read or a
+`.wiff` without its `.wiff.scan`, **4** nothing found (only with
+`--require`; an empty result is otherwise not an error), **5** an internal
+error.
+
+### What each one answers
+
+| Subcommand | Answers |
+|---|---|
+| `selftest` | the platform, whether the SCIEX libraries load, and for each file whether it opens and a spectrum reads |
+| `info` | the samples, and every channel: index, kind (`ms1`, `ida-slot`, `dda-events`, `swath`, `mrm`, `product`), label, scans, mass range, precursor (none for an IDA slot), isolation width, collision energy, polarity |
+| `scans` | one row per scan: channel, scan, cycle, RT, MS level, **the precursor that scan isolated**, its isolation window, CE, TIC, points; `--count` gives counts per channel |
+| `xic` | per m/z: the apex (the tallest point of the trace) with its RT and height, the bounds (outward to the first point at or below 5% of the apex, or to the valley before a rise of a tenth of it), the area between them (trapezoid, no baseline), FWHM, points across the peak, and S/N with the noise convention named — the definitions are printed in the document and are MIL-X's; with `--reference`, Pearson r over the reference peak's span, the apex ΔRT and the height ratio |
+| `spectrum` | the peak list (m/z, intensity, % of base) and every scan it was made from with its precursor; `--subtract` takes off the mean of background windows; `--msp` also writes an MSP record |
+| `isotopes` | M, M+1, M+2… measured beside their expected masses, the spacing error, and the expected abundances when `--formula` is given |
+| `batch-xic` | one row per file, sample and m/z — how blanks and a compound's spread over a batch are checked; files and folders alike, with every file left out (a `.wiff` without its `.wiff.scan`, a stray `.scan`) listed under `skipped` |
+| `convert` | an mzML that keeps each scan's precursor — `scans` on it gives the same precursors |
+
+### Examples, measured
+
+On a TripleTOF 5600 HILIC IDA run (one survey, eight dependent slots, 1,986
+cycles):
+
+```
+$ milq scans run.wiff --source gated:707.22 --format tsv | head -2
+channel  scan  cycle  rt      ms_level  parent_mz  isolation          ce    tic       points
+5        160   160    1.137   2         707.2197   706.7197;707.7197  35.0  656159.0  4447
+```
+
+Fifteen scans in four different slots isolated 707.22 over the run.
+
+```
+$ milq xic run.wiff --mz 707.22 --tol 0.02 --reference 365.104@gated:707.22
+"summary": [{"mz": 707.22, "found": true, "apex_rt": 1.3425,
+  "apex_height": 3946742.86, "fwhm": 0.1419, "points_across_peak": 7,
+  "sn": 19915.11, "vs_reference": {"pearson_r": 0.8695,
+  "apex_delta_rt": -0.0339, "height_ratio": 14.774225}}]
+```
+
+— the precursor in the survey against its strongest fragment read from the
+scans that isolated it.
+
+```
+$ milq isotopes run.wiff --mz 707.22 --rt 0:20 --tol 0.02
+M 707.2208 100 · M+1 708.2259 23.7 · M+2 709.2254 7.3 · M+3 710.2287 1.5
+```
+
+### What a call costs
+
+The first call on a file reads its headers and, for `scans`, the number of
+points in every scan; both are written to a **sidecar index** keyed on the
+file's path, size and modification time (and its `.wiff.scan`'s), so an
+edited file is never answered from a stale entry. Measured here: `scans` on
+the IDA `.wiff` 3.8 s cold, 1.3–1.8 s warm; `info` on its 70 MB mzML 1.4 s
+cold, 0.5 s warm. About a second of every `.wiff` call is starting .NET,
+which is what `serve` saves. The index lives in `index/` under the
+application's cache, or where `--cache` or `MILQ_INDEX_DIR` says; deleting
+it is safe.
+
+## serve: running commands on the Mac from somewhere else
+
+An agent working in a Linux VM sees the shared folders but cannot type into
+a macOS terminal, and on Linux the SCIEX libraries may not read a `.wiff` at
+all. So the Mac runs the jobs: start this once in a Terminal on the Mac —
+
+```
+milq serve --inbox ~/Documents/mil-jobs --allow-root ~/Documents/MIL-data
+```
+
+— and it watches `~/Documents/mil-jobs/inbox/`. A request is one file,
+`inbox/<id>.json`, written whole (as `<id>.json.tmp`, then renamed):
+
+```
+{"schema": "mil-cli/1", "id": "0001", "command": "xic",
+ "args": {"file": "/Users/me/Documents/MIL-data/run.wiff",
+          "mz": [627.8457], "tol": 0.01, "source": "gated:627.8457"},
+ "format": "json"}
+```
+
+The answer is `outbox/0001.json`, byte for byte what `milq xic …` would
+print, and the request moves to `outbox/0001.request.json`; a request that
+failed goes to `failed/` with its error document. `"batch": [ … ]` runs
+several in order in one file. A `--trace`, an MSP or a TSV is written under
+`outbox/<id>/` and listed in the answer.
+
+It is an allow-list, not a shell: only the subcommands above and `peptide …`
+run, inside the server's own process — no shell, no subprocess. Every path
+a request names must lie (symlinks followed) inside an `--allow-root` or the
+inbox folder (`path_outside_roots` otherwise), and nothing outside `outbox/`
+is ever overwritten. One job runs at a time; a job past its `timeout_s`
+(1,800 s by default) is answered `timeout` and abandoned. `STATUS.json` says
+what is running and how long the queue is; `log.jsonl` has one line per job
+(id, command, arguments, start, end, outcome, outputs, peak memory) and
+never file contents. Create `STOP` in the folder, press Ctrl-C, or start
+with `--idle-exit MIN` to end it after the current job; a job found in
+`running/` when it starts was interrupted and goes to `failed/`. The files
+stay open between jobs (up to four at once), which is what makes the second
+request on a file fast.
+
+`milq serve --stdio` does the same over a pipe: one JSON request per line
+in, one document per line out.
+
+### Starting it at login (optional)
+
+`packaging/macos/io.github.pedronobrez.milq-serve.plist` is a `launchd`
+agent that starts the server at login. Edit the two folders and the path to
+`milq` in it (`which milq` prints it), then:
+
+```
+cp packaging/macos/io.github.pedronobrez.milq-serve.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/io.github.pedronobrez.milq-serve.plist
+```
+
+`launchctl unload` with the same path stops it. Nothing needs it: the
+Terminal command above is the whole of the requirement.
+
+### On Linux
+
+On Ubuntu 22.04 (arm64 or x86-64), as an ordinary user:
+
+```
+python3 -m pip install --user --upgrade pip setuptools
+python3 -m pip install --user numpy pythonnet certifi
+python3 -m pip install --user --no-deps alpharaw
+python3 -m pip install --user --no-deps .
+python3 -m milq.bootstrap --install
+milq selftest run.wiff
+```
+
+The first line matters: Ubuntu's own pip and setuptools install this
+package as `UNKNOWN-0.0.0`. `alpharaw` goes in with `--no-deps` because it
+carries the SCIEX assemblies and declares readers this program never
+imports; `pip install .[cli]` lists the same four. The bootstrap puts .NET
+8 in `~/.dotnet` without sudo. Measured on Ubuntu 22.04 arm64 with 3 GB:
+the `.wiff` reads, with the same numbers as on macOS — see
+[[measured-facts]]. Where `selftest` says it does not, the mzML route is
+complete: `milq convert` on the Mac, then every subcommand on the mzML.
+
+## The application's own arguments
 
 ```
 MIL-Q [files...] [--selftest] [--digest]

@@ -6,6 +6,7 @@ import pyqtgraph as pg
 from PyQt6 import QtCore, QtWidgets
 
 from . import theme
+from . import chart_export
 from ..session import Session
 from ..validation import acquisition_order
 from .plots import colour
@@ -92,6 +93,7 @@ class MetricPlotPanel(QtWidgets.QWidget):
         layout.addLayout(bar)
 
         self.plot = pg.PlotWidget(background=theme.background())
+        chart_export.install(self, 'metric')
         self.plot.showGrid(x=True, y=True, alpha=0.15)
         theme.style_axes(self.plot)
         self.legend = self.plot.addLegend(

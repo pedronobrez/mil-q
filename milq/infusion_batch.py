@@ -202,11 +202,17 @@ def _ensure_app():
 
 
 def _page_count(path: str) -> int:
-    """Pages in a PDF just written, or 0 if they cannot be counted."""
+    """
+    Pages in a PDF just written, or 0 if they cannot be counted.
+
+    QtPdf where it is installed; otherwise the PDF's own page tree. PyQt6
+    6.12 stopped shipping `PyQt6.QtPdf`, and the count silently became 0
+    for every report — which is what a failed write looks like.
+    """
     try:
         from PyQt6.QtPdf import QPdfDocument
-    except ImportError:                              # pragma: no cover
-        return 0
+    except ImportError:
+        return _page_tree_count(path)
     document = QPdfDocument(None)
     try:
         if document.load(path) != QPdfDocument.Error.None_:
@@ -215,6 +221,26 @@ def _page_count(path: str) -> int:
     finally:
         document.close()
         document.deleteLater()
+
+
+def _page_tree_count(path: str) -> int:
+    """
+    The `/Count` of the root `/Pages` object, read from the bytes. Qt's PDF
+    writer leaves the object dictionaries uncompressed (only the content
+    streams are deflated), so the page tree is plain text in the file.
+    """
+    import re
+
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError:
+        return 0
+    counts = [int(m.group(1)) for m in re.finditer(
+        rb"/Type\s*/Pages\b[^>]*?/Count\s+(\d+)", data, re.S)]
+    counts += [int(m.group(1)) for m in re.finditer(
+        rb"/Count\s+(\d+)[^>]*?/Type\s*/Pages\b", data, re.S)]
+    return max(counts, default=0)
 
 
 # --------------------------------------------------------------------------- #

@@ -86,3 +86,28 @@ tutoriais do Skyline, e os valores são os do método; se o Skyline aceita o
 arquivo não foi testado, e dizer isso é melhor que dar a entender o
 contrário. Os [[design-principles]] dizem por quê. A mesma ressalva se aplica
 à [[acquisition-schedule]], pelo mesmo motivo.
+
+## Um gráfico como imagem
+
+Todo gráfico — o cromatograma e o espectro do Explorer, o mapa de contorno e
+a sua faixa de íons totais, cada painel da grade de revisão de picos, a curva
+de calibração, a comparação de algoritmos, o gráfico de métricas, o gráfico
+de controle, a deriva de massa e o histórico de um padrão — tem **Export as
+a picture…** no menu do clique direito. O diálogo pergunta cinco coisas e
+mostra o resultado:
+
+| Opção | Escolhas |
+|---|---|
+| Format | SVG (para editar e imprimir em qualquer tamanho) ou PNG |
+| Scale | 2–6× o tamanho na tela (só PNG) |
+| Theme | Light, Dark, ou como na tela |
+| Background | Paper (o fundo do próprio tema), White, ou Transparent |
+| Type size | 0.7–2.2× todo texto: os eixos, a legenda e os rótulos |
+
+A pré-visualização não é uma maquete: é a própria exportação, escrita na
+memória pelo código que escreve o arquivo, de modo que o que ela mostra é o
+que é salvo. As escolhas são lembradas para a próxima exportação. O gráfico
+é redesenhado no tema escolhido durante a exportação e depois volta ao que
+era, de modo que a imagem contém exatamente o que o gráfico contém. São as opções que o MIL-X oferece, para que uma figura de um
+programa combine com a do outro. O relatório impresso e os espectros
+comparados desenham as suas próprias figuras para papel — ver [[report]].

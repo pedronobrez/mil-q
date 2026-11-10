@@ -13,15 +13,25 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
     "numpy>=1.24",
-    "PyQt6>=6.5",
+    # 6.12 no longer ships PyQt6.QtPdf, which the report writers use to
+    # check the PDF they wrote (and the suite to read it back); there is no
+    # separate wheel for it yet
+    "PyQt6>=6.5,<6.12",
     "pyqtgraph>=0.13",
     "alpharaw>=0.7",
     "pythonnet>=3.0",
     "certifi",
 ]
 
+[project.optional-dependencies]
+# `pip install .[cli]`: the command line alone — no Qt, no pyqtgraph — for a
+# headless machine. The base install still lists the window's dependencies,
+# so `pip install --no-deps .` followed by `pip install numpy pythonnet
+# alpharaw certifi` is the lightest route on a VM (see command-line.md).
+cli = ["numpy>=1.24", "pythonnet>=3.0", "alpharaw>=0.7", "certifi"]
+
 [project.scripts]
-milq = "milq.app:main"
+milq = "milq.cli:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "milq.__version__" }

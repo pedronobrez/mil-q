@@ -260,11 +260,26 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "macOS" ]; then
-            QT_QPA_PLATFORM=offscreen dist/MIL-Q.app/Contents/MacOS/MIL-Q --selftest
+            BIN=dist/MIL-Q.app/Contents/MacOS/MIL-Q
+            QT_QPA_PLATFORM=offscreen "$BIN" --selftest
           elif [ "$RUNNER_OS" = "Windows" ]; then
-            QT_QPA_PLATFORM=offscreen ./dist/MIL-Q/MIL-Q.exe --selftest
+            BIN=./dist/MIL-Q/MIL-Q.exe
+            QT_QPA_PLATFORM=offscreen "$BIN" --selftest
           else
-            xvfb-run -a ./dist/MIL-Q/MIL-Q --selftest
+            BIN=./dist/MIL-Q/MIL-Q
+            xvfb-run -a "$BIN" --selftest
+          fi
+          # the same executable answers the suite's command-line contract
+          # (milq.cli): a JSON document with the mil-cli/1 schema, no window.
+          # It is the path an agent uses, and nothing else in this job runs it.
+          # Not on Windows: the bundle is windowed (console=False) and a
+          # windowed PyInstaller program has no stdout there; the command line
+          # on Windows is `pip install` (see command-line.md).
+          if [ "$RUNNER_OS" != "Windows" ]; then
+            "$BIN" selftest --quiet > selftest.json
+            python -c "import json; d = json.load(open('selftest.json')); assert d['schema'] == 'mil-cli/1' and d['tool'] == 'milq', d; print(d['vendor_sdk'])"
+            "$BIN" peptide mass "pGlu-QPLAPVHNPISV" --quiet > mass.json
+            python -c "import json; d = json.load(open('mass.json')); assert abs(d['mz'][1]['mz'] - 627.845687) < 1e-6, d"
           fi
 
       - name: Disk image

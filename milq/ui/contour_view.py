@@ -25,6 +25,8 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt6 import QtCore, QtGui, QtWidgets
 
+from . import chart_export
+
 from . import theme
 from ..contour import Contour
 from .flow_layout import FlowLayout
@@ -136,6 +138,7 @@ class ContourView(QtWidgets.QWidget):
         self.image = pg.ImageItem()
         self.plot.addItem(self.image)
         self.plot.setMenuEnabled(False)
+        chart_export.install(self.plot, "contour")
 
         pen = pg.mkPen(theme.muted(), width=1,
                        style=QtCore.Qt.PenStyle.DashLine)
@@ -221,6 +224,7 @@ class ContourView(QtWidgets.QWidget):
         self.strip = pg.PlotWidget(background=theme.background())
         self.strip.setFixedHeight(92)
         self.strip.setMenuEnabled(False)
+        chart_export.install(self.strip, "contour strip")
         self.strip.setMouseEnabled(x=True, y=False)
         self.strip.hideAxis("bottom")   # the surface underneath carries it
         self.strip.setLabel("left", "TIC")

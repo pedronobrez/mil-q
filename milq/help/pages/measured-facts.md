@@ -16,6 +16,19 @@ is said beside it.
 
 ## The reader
 
+- **A `.wiff` reads on Linux on Apple Silicon's architecture.** In an
+  Ubuntu 22.04 arm64 machine with Python 3.10, 3 GB of memory and four
+  cores, as an ordinary user with no sudo: `python3 -m milq.bootstrap
+  --install` put .NET 8.0.33 for linux-arm64 into `~/.dotnet` and fetched
+  the compatibility assemblies in 8 s, and Clearcore2 then opened a
+  TripleTOF 5600 IDA `.wiff` — `milq selftest`, `info` and two `xic` calls
+  (one gated by precursor) gave byte for byte the numbers macOS gives, at
+  126 MB peak memory, 0.6–1.2 s a call. One trap on the way: Ubuntu's own
+  pip and setuptools do not read this package's `pyproject.toml` and
+  install it as `UNKNOWN-0.0.0`; `python3 -m pip install --user --upgrade
+  pip setuptools` first. Measured in a container on the Mac, not on a
+  separate machine; ICU (`libicu70`) was installed, as it is on a stock
+  Ubuntu desktop.
 - **Builds agree.** The `--digest` fingerprint from source on macOS, from
   the CI disk image and from the Windows installer under CrossOver is
   byte-identical: 405 channel chromatograms, 25 spectra, 125 integrated

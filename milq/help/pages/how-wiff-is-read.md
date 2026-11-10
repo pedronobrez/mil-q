@@ -52,6 +52,33 @@ Files are opened with `OpenFileMode.ReadOnlyShared`. Anything else takes an
 exclusive lock, and a second window — or Analyst itself — cannot open the
 same file.
 
+## IDA: the precursor is per scan
+
+IDA is SCIEX's data-dependent acquisition: a survey scan, then a number of
+*dependent* experiments (`IDAType` Dependent or Confirmation) that each
+cycle fills with one of the most intense ions the survey offered. Each
+dependent experiment still declares a fixed mass (`FixedMasses`) like any
+product-ion scan, and it is a placeholder — on a TripleTOF 5600 run the
+eight slots declare 1.0, 2.0 … 8.0, the slot's number; on a ZenoTOF method
+all 24 slots declare 829.5. The precursor actually isolated is on each
+spectrum, `MassSpectrumInfo.ParentMZ`, and it changes almost every cycle.
+
+So a dependent experiment is read as an **IDA slot**: it has no precursor
+of its own, its tree label reads `TOF PI IDA slot 3`, and every scan
+carries its own precursor (and its charge and collision energy, which in
+IDA can roll with the precursor). A cycle whose `ParentMZ` is not positive
+did not trigger the slot; it has no data points either. A slot is never
+matched to a component by its placeholder, a spectrum shown from one says
+which precursor it came from — `parent 627.8457` for one scan, or *mixes 37
+precursors* for an average across cycles that isolated different things —
+and Explain and the library search are handed the per-scan precursor, or
+none when an average mixes them. To read one precursor's product scans
+across every slot, use a gated source ([[manual-xic]]). *Export sample as
+mzML* writes each scan's own precursor and leaves out the cycles a slot did
+not trigger. SWATH windows, MRM and genuine fixed product-ion scans keep
+their fixed mass. The rule is the one MIL-X follows (`docs/SCIEX-IDA.md`
+there).
+
 ## What comes from the vendor and what does not
 
 Totals, retention times and integrated areas that the vendor library
@@ -59,7 +86,11 @@ reports are used as reported: summing the stored points instead was measured
 to move every integrated area by 2%. Profile spectra come back with the
 zero-intensity points the library restores on the way out. Extracted ion
 chromatograms are the one thing computed here rather than asked of the
-library, and the one place the two disagree — see [[formats]].
+library, and the one place the two disagree — see [[formats]]. A
+spectrum is centroided by this program for labels, Explain and the
+spectral library; `MILQ_WIFF_CENTROID=sciex` hands that to SCIEX's own peak
+finder — see [[environment-variables]], which says why that is not the
+default.
 
 ## Verified where
 

@@ -56,6 +56,11 @@ class Trace:
     #: the pane knows. It is what a pinned spectrum is saved as: the points
     #: are read from the file again rather than written into the project.
     recipe: object | None = None
+    #: the instrument's own centroids of this spectrum (m/z, height), where
+    #: the reader has a peak finder and nothing has changed the spectrum
+    #: since — `centroiding`. Centroid mode draws them, and a label is named
+    #: with the vendor's apex for the peak it sits on.
+    sticks: tuple | None = None
 
 
 def _label_half_width(text) -> float:
@@ -1082,6 +1087,10 @@ class SpectrumView(BasePlot):
     def condition(self, trace: Trace) -> tuple[np.ndarray, np.ndarray]:
         x, y = super().condition(trace)
         if self._centroid:
+            sticks = getattr(trace, "sticks", None)
+            if sticks is not None and len(sticks[0]):
+                return (np.asarray(sticks[0], dtype=float),
+                        np.asarray(sticks[1], dtype=float))
             return centroid_spectrum(x, y)
         # a profile spectrum whose zeros were stripped out draws a slope
         # across every empty stretch; putting them back is a drawing repair
@@ -1242,8 +1251,9 @@ class SpectrumView(BasePlot):
         # centroid mode has already reduced the profile to sticks; centroiding
         # again averages a stick with its neighbours and moves the mass — a
         # ceramide's 264.2668 was being reported as 264.1181
-        return pick_peaks(x, y, max_peaks=max_peaks, min_relative=0.005,
-                          min_distance=0.03, centroid=not self._centroid)
+        found = pick_peaks(x, y, max_peaks=max_peaks, min_relative=0.005,
+                           min_distance=0.03, centroid=not self._centroid)
+        return _named_by_vendor(found, getattr(traces[0], "sticks", None))
 
     # -- theoretical overlay ---------------------------------------------------- #
     def set_overlay(self, peaks: list[tuple[float, float]], label: str = "",
@@ -1334,10 +1344,13 @@ class SpectrumView(BasePlot):
             for n, trace in enumerate(self.traces):
                 x, y = self._display(trace, n)
                 below = bool(self._mirror and n % 2 == 1)
-                for mz, intensity in pick_peaks(x, np.abs(y),
-                                                max_peaks=self._pool_size(),
-                                                min_relative=self._pool_floor(),
-                                                min_distance=0.05):
+                found = pick_peaks(x, np.abs(y), max_peaks=self._pool_size(),
+                                   min_relative=self._pool_floor(),
+                                   min_distance=0.05)
+                # offsets move the axis of a cascade; a vendor's apex is on
+                # the trace's own axis, so it names only an unshifted trace
+                sticks = None if self._offset_x else getattr(trace, "sticks", None)
+                for mz, intensity in _named_by_vendor(found, sticks):
                     self._candidates.append((mz, intensity, below))
         self._thin_labels()
 
@@ -1446,6 +1459,10 @@ class SpectrumView(BasePlot):
         pin.setEnabled(any(t.key == "spec" for t in self._traces))
         unpin = menu.addAction("Unpin spectra")
         unpin.setEnabled(any(t.key.startswith("pin") for t in self._traces))
+        menu.addSeparator()
+        from . import chart_export
+
+        menu.addAction(chart_export.action_for(self, "spectrum", menu))
 
         chosen = menu.exec(event.globalPos())
         if chosen is extract and selection:
@@ -1464,3 +1481,13 @@ class SpectrumView(BasePlot):
             self.sigPinRequested.emit()
         elif chosen is unpin:
             self.sigUnpinRequested.emit()
+
+
+def _named_by_vendor(found, sticks):
+    """Peaks found here, each named with the vendor's apex where it has one."""
+    if sticks is None or not found:
+        return found
+    from ..centroiding import snap
+
+    masses = snap([mz for mz, _h in found], sticks)
+    return [(float(m), h) for m, (_mz, h) in zip(masses, found)]

@@ -7,6 +7,7 @@ import pyqtgraph as pg
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 from . import theme
+from . import chart_export
 from ..calibration import REGRESSIONS, WEIGHTINGS, Calibration
 from .flow_layout import FlowLayout
 
@@ -56,6 +57,7 @@ class CalibrationPanel(QtWidgets.QWidget):
 
         body = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.plot = pg.PlotWidget(background=theme.background())
+        chart_export.install(self, 'calibration')
         self.plot.showGrid(x=True, y=True, alpha=0.15)
         self.plot.setLabel("bottom", "Concentration")
         self.plot.setLabel("left", "Response")

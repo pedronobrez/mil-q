@@ -14,6 +14,28 @@ every checked channel with **Extract from every checked channel** ticked.
 The **Active XICs** list names them; select one and press Delete to remove
 it, or **Clear XICs** to remove all.
 
+## Where the trace is read from
+
+**Source** chooses which scans the trace adds up:
+
+| Source | What it reads |
+|---|---|
+| Active channel | the active channel, every scan (the default) |
+| MS1 (survey) | the survey channel — every one of a scheduled method's, laid on one time axis |
+| All MS2 scans | every product-ion scan of every channel, merged by retention time |
+| Gated by precursor m/z | only the product-ion scans whose **own** precursor lies within the tolerance given beside it (0.05 Da by default), from every channel, merged by retention time |
+
+The gate is what data-dependent acquisition needs. A SCIEX IDA method has
+dependent slots — `TOF PI` experiments filled cycle by cycle with whatever
+the survey offered — and one slot of a TripleTOF 5600 run isolated 298
+different precursors in its 405 triggered cycles. Extracting a fragment
+from the active slot adds up every one of them; gating on 627.8457 adds up
+only the scans that isolated 627.8457, whichever slot they landed in.
+Scans of one cycle share its retention time, and scans at the same time are
+added, so the trace has one point per time. The arithmetic is still each
+channel's own extraction (SCIEX's on a `.wiff`), with the scans that
+isolated something else left out. See [[how-wiff-is-read]].
+
 ## From the spectrum
 
 Shift+drag across an m/z range on the spectrum pane, then right-click and

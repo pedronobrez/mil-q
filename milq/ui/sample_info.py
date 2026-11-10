@@ -47,7 +47,7 @@ class SampleInfoPanel(QtWidgets.QWidget):
                 ("Name", info.name),
                 ("Type", info.experiment_type),
                 ("Polarity", info.polarity),
-                ("Precursor", "—" if info.precursor is None else f"{info.precursor:.4f}"),
+                ("Precursor", _precursor_text(channel)),
                 ("Mass range", f"{info.start_mass:.1f} – {info.end_mass:.1f}"),
                 ("Scans", str(info.n_scans)),
             ]
@@ -78,3 +78,20 @@ class SampleInfoPanel(QtWidgets.QWidget):
         for i in range(self.tree.topLevelItemCount()):
             walk(self.tree.topLevelItem(i))
         QtWidgets.QApplication.clipboard().setText("\n".join(lines))
+
+
+def _precursor_text(channel) -> str:
+    """The channel's precursor; for an IDA slot or DDA events, the range."""
+    info = channel.info
+    if info.precursor is not None:
+        return f"{info.precursor:.4f}"
+    if not getattr(info, "per_scan", False):
+        return "—"
+    import numpy as np
+
+    parents = np.asarray(channel.scan_precursors(), dtype=float)
+    parents = parents[np.isfinite(parents)]
+    if parents.size == 0:
+        return "per scan: none triggered"
+    return (f"per scan: {parents.size} scans, "
+            f"{parents.min():.4f}–{parents.max():.4f}")

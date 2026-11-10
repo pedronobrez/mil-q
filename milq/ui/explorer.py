@@ -17,6 +17,7 @@ from ..chemistry import (
     rank_by_isotope_pattern,
 )
 from ..components import Component
+from .. import centroiding, gating
 from .. import infusion as infusion_rules
 from ..infusion import (InfusionVerdict, NoiseFloor, after_settling,
                         format_counts, noise_floor_for, run_range,
@@ -485,7 +486,34 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
         tol_row.addWidget(self.xic_tol)
         tol_row.addWidget(self.xic_unit)
         form.addRow("Tolerance (±):", tol_row)
+
+        # where the trace is read from. Data-dependent acquisition puts a
+        # different precursor in a product-ion channel almost every cycle,
+        # so "the active channel" of an IDA slot is many precursors at once;
+        # gated extraction keeps only the MS2 scans that isolated one
+        self.xic_source = QtWidgets.QComboBox()
+        self.xic_source.addItem("Active channel", "channel")
+        self.xic_source.addItem("MS1 (survey)", gating.SOURCE_MS1)
+        self.xic_source.addItem("All MS2 scans", gating.SOURCE_MS2_ALL)
+        self.xic_source.addItem("Gated by precursor m/z", gating.SOURCE_GATED)
+        self.xic_source.setToolTip(
+            "Gated: only the MS2 scans whose own precursor lies within the "
+            "tolerance of the m/z given, from every channel, merged by time")
+        form.addRow("Source:", self.xic_source)
+        gate_row = QtWidgets.QHBoxLayout()
+        self.xic_gate_mz = QtWidgets.QLineEdit()
+        self.xic_gate_mz.setPlaceholderText("precursor m/z, e.g. 627.8457")
+        self.xic_gate_tol = QtWidgets.QDoubleSpinBox()
+        self.xic_gate_tol.setDecimals(3)
+        self.xic_gate_tol.setRange(0.001, 5.0)
+        self.xic_gate_tol.setValue(gating.DEFAULT_PARENT_TOL)
+        self.xic_gate_tol.setSuffix(" Da")
+        gate_row.addWidget(self.xic_gate_mz, 1)
+        gate_row.addWidget(self.xic_gate_tol)
+        form.addRow("Precursor (±):", gate_row)
+        self.xic_source.currentIndexChanged.connect(self._xic_source_changed)
         layout.addLayout(form)
+        self._xic_source_changed()
 
         self.xic_all_channels = QtWidgets.QCheckBox("Extract from every checked channel")
         layout.addWidget(self.xic_all_channels)
@@ -1790,10 +1818,13 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
         # scan against the average it is being compared with
         pair = (self._delta_from_average(channel, mz, intensity)
                 if self.act_delta.isChecked() else None)
+        sticks = (None if subtracted or pair is not None
+                  else self._vendor_sticks(channel, scan=self.current_scan))
         mz, recalibrated = self._recalibrate_mz(mz)
         title = (
             f"{self.active_ref.label} · scan {self.current_scan + 1}"
             f"/{channel.info.n_scans} · RT {rt:.3f} min"
+            + self._parent_note(channel, scan=self.current_scan)
             + (" · Δ from the run average" if pair is not None else "")
             + (" · background subtracted" if subtracted else "")
             + recalibrated
@@ -1804,7 +1835,7 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
                                          subtracted=subtracted, label=title)
         if pair is None:
             drawn = [Trace("spec", "spectrum", mz, intensity, "#1f77b4",
-                           channel, self._live_recipe)]
+                           channel, self._live_recipe, sticks)]
         else:
             difference, average = pair
             # the difference keeps the "spec" key: it is what this pane is
@@ -1881,6 +1912,8 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
             # the whole run averaged is what an infusion's ladder is read
             # from, and this is the one place that has it uncorrected
             self._fit_infusion_axis(mz, intensity)
+        sticks = (None if subtracted or whole_run
+                  else self._vendor_sticks(channel, rt_range=(rt0, rt1)))
         mz, recalibrated = self._recalibrate_mz(mz)
         # the scan numbers are what says which part of the run was taken;
         # a whole-run average has no other part to be told from, so the tag
@@ -1894,6 +1927,7 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
         title = (
             f"{self.active_ref.label} · {count}{tag}{scans} "
             f"· RT {min(rt0, rt1):.3f}–{max(rt0, rt1):.3f} min"
+            + self._parent_note(channel, rt0=rt0, rt1=rt1)
             + (" · background subtracted" if subtracted else "")
             + recalibrated
         )
@@ -1902,7 +1936,7 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
             subtracted=subtracted, label=title)
         self.spectrum.set_traces(self._with_pins(
             Trace("spec", "average spectrum", mz, intensity, "#d62728", channel,
-                  self._live_recipe)))
+                  self._live_recipe, sticks)))
         if not live:
             self.spectrum.autoscale()
         self.spectrum.set_title(title)
@@ -1911,6 +1945,76 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
         if not live:  # too slow to rebuild on every mouse move of a drag
             self.refresh_comparison()
             self._fill_peak_table()
+
+    def _vendor_sticks(self, channel, scan: int | None = None, rt_range=None):
+        """
+        The instrument's centroids of what is about to be drawn, on the same
+        (possibly corrected) mass axis, or None. Asked only for a spectrum
+        the reader made unaltered — a background subtracted or a difference
+        from the average is no longer the scan the vendor centroided — and
+        a whole-run average is the spray-masked one, which no single vendor
+        call makes.
+        """
+        found = centroiding.vendor(channel, scan=scan, rt_range=rt_range)
+        if found is None or not len(found[0]):
+            return None
+        mz, _said = self._recalibrate_mz(np.asarray(found[0], dtype=float))
+        return mz, np.asarray(found[1], dtype=float)
+
+    def _sticks_on_screen(self):
+        """
+        The spectrum on screen as centroids: the vendor's where the live
+        trace carries them, the local centroider otherwise — or the sticks
+        themselves when the pane already shows centroids it made.
+        """
+        current = self._current_spectrum()
+        if current is None:
+            return None
+        live = next((t for t in self.spectrum.traces if t.key == "spec"), None)
+        sticks = getattr(live, "sticks", None)
+        if sticks is not None and len(sticks[0]):
+            return (np.asarray(sticks[0], dtype=float),
+                    np.asarray(sticks[1], dtype=float))
+        mz, intensity = current
+        if not self.act_centroid.isChecked():
+            # centroiding what is already sticks merges neighbours and moves
+            # the masses, which is worse than not centroiding at all
+            mz, intensity = centroid_spectrum(mz, intensity)
+        return mz, intensity
+
+    @staticmethod
+    def _parent_note(channel, scan: int | None = None,
+                     rt0: float | None = None, rt1: float | None = None) -> str:
+        """
+        The precursor a spectrum of a data-dependent channel stands for.
+
+        One scan names its own; an average names the one precursor its
+        scans shared or says it mixes several — the case that used to be
+        silent, where an average over an IDA slot added up every precursor
+        the slot isolated in that time.
+        """
+        if not getattr(channel.info, "per_scan", False):
+            return ""
+        try:
+            values = gating.precursors_shown(channel, scan, rt0, rt1)
+        except Exception:
+            return ""
+        if values.size == 0:
+            return " · not triggered" if scan is not None else " · no precursor"
+        return " · " + gating.describe_precursors(values)
+
+    def _shown_precursor(self, channel) -> float | None:
+        """The precursor of the spectrum on screen (`gating.precursor_shown`)."""
+        recipe = getattr(self, "_live_recipe", None)
+        try:
+            if recipe is not None and recipe.scan is not None:
+                return gating.precursor_shown(channel, scan=int(recipe.scan))
+            if recipe is not None and recipe.rt0 is not None:
+                return gating.precursor_shown(channel, rt0=recipe.rt0,
+                                              rt1=recipe.rt1)
+            return gating.precursor_shown(channel)
+        except Exception:
+            return channel.info.precursor
 
     def _spectrum_unreadable(self, error: Exception) -> None:
         """
@@ -1987,6 +2091,52 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
                 return targets
         return [self.active_ref] if self.active_ref and self.active_ref.channel else []
 
+    def select_channel(self, key: str) -> None:
+        """
+        Make one tree entry (`sample key|channel index`, or `|TIC`) checked,
+        current and active — what clicking and ticking it does, for a script.
+        """
+        item = self._tree_items().get(key)
+        if item is None:
+            raise KeyError(f"no channel {key!r} is open")
+        item.setCheckState(0, QtCore.Qt.CheckState.Checked)
+        self.tree.setCurrentItem(item)
+        self._rebuild_active_combo()
+        index = self.active_combo.findData(key)
+        if index >= 0:
+            self.active_combo.setCurrentIndex(index)
+        self._sync_active_ref()
+
+    def _xic_source_changed(self, *_args) -> None:
+        gated = self.xic_source.currentData() == gating.SOURCE_GATED
+        self.xic_gate_mz.setEnabled(gated)
+        self.xic_gate_tol.setEnabled(gated)
+
+    def set_xic_source(self, source: str) -> None:
+        """Choose the source by its contract name (`ms1`, `gated:MZ:TOL`…)."""
+        if source in ("", "channel", "active"):
+            self.xic_source.setCurrentIndex(0)
+            return
+        parsed = gating.Source.parse(source)
+        index = self.xic_source.findData(parsed.kind)
+        self.xic_source.setCurrentIndex(max(index, 0))
+        if parsed.kind == gating.SOURCE_GATED:
+            self.xic_gate_mz.setText(f"{parsed.mz:.4f}")
+            self.xic_gate_tol.setValue(parsed.tol)
+
+    def _xic_source(self) -> gating.Source | None:
+        """The source chosen on the form; None for the active channel."""
+        kind = self.xic_source.currentData()
+        if kind in (None, "channel"):
+            return None
+        if kind == gating.SOURCE_GATED:
+            try:
+                mz = float(self.xic_gate_mz.text().strip())
+            except ValueError:
+                return None
+            return gating.Source.gated(mz, self.xic_gate_tol.value())
+        return gating.Source(kind)
+
     def _extract_from_form(self) -> None:
         text = self.xic_mz.text().replace(";", ",")
         values = []
@@ -2003,6 +2153,11 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
             return
         tol = self.xic_tol.value()
         unit = self.xic_unit.currentText()
+        if (self.xic_source.currentData() == gating.SOURCE_GATED
+                and self._xic_source() is None):
+            QtWidgets.QMessageBox.warning(
+                self, "No precursor", "Give the precursor m/z to gate on.")
+            return
         for mz in values:
             half = mz * tol * 1e-6 if unit == "ppm" else tol
             self._add_xic(mz - half, mz + half, f"XIC {mz:.4f} ±{tol:g} {unit}")
@@ -2017,22 +2172,37 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
         if not targets:
             self._update_status("Pick an active channel before extracting an XIC.")
             return
+        source = self._xic_source()
         unreadable: list[str] = []
+        done_samples: set[str] = set()
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         try:
             for ref in targets:
+                if source is not None:
+                    # a source spans the sample's channels: once per sample
+                    if ref.entry.key in done_samples:
+                        continue
+                    done_samples.add(ref.entry.key)
                 try:
-                    x, y = ref.channel.xic_range(mz_lo, mz_hi)
+                    if source is None:
+                        x, y = ref.channel.xic_range(mz_lo, mz_hi)
+                    else:
+                        trace = gating.xic(ref.entry.sample, mz_lo, mz_hi, source)
+                        x, y = trace.rt, trace.intensity
                 except Exception as exc:
                     unreadable.append(ref.entry.problem
                                       or f"{ref.label}: {_first_line(exc)}")
                     continue
                 if x.size == 0:
+                    if source is not None:
+                        unreadable.append(f"{ref.alias}: no scan from {source}")
                     continue
-                key = f"xic|{ref.key}|{mz_lo:.5f}|{mz_hi:.5f}"
+                where = ref.key if source is None else f"{ref.entry.key}|{source}"
+                key = f"xic|{where}|{mz_lo:.5f}|{mz_hi:.5f}"
                 if any(d["key"] == key for d in self.xic_defs):
                     continue
-                full = f"{ref.label} · {label}"
+                full = (f"{ref.label} · {label}" if source is None
+                        else f"{ref.alias} · {source} · {label}")
                 self.xic_defs.append(
                     {"key": key, "label": full, "x": x, "y": y, "channel": ref.channel}
                 )
@@ -2260,19 +2430,18 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
 
     def explain_spectrum(self) -> None:
         """Send the spectrum on screen to be scored against LIPID MAPS."""
-        current = self._current_spectrum()
+        current = self._sticks_on_screen()
         if current is None:
             self._update_status("Show a spectrum first.")
             return
         mz, intensity = current
-        if not self.act_centroid.isChecked():
-            # centroiding what is already sticks merges neighbours and moves
-            # the masses, which is worse than not centroiding at all
-            mz, intensity = centroid_spectrum(mz, intensity)
         precursor, polarity = None, ""
         if self.active_ref is not None and self.active_ref.channel is not None:
             info = self.active_ref.channel.info
-            precursor = info.precursor
+            # per scan where the channel is data-dependent: the slot's own
+            # number is a placeholder, and an average that mixes precursors
+            # has none to give
+            precursor = self._shown_precursor(self.active_ref.channel)
             # the polarity goes with the precursor: which adduct that number
             # is depends on the sign the channel was acquired at, and the
             # sign is a fact about the acquisition rather than a choice
@@ -2361,13 +2530,11 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
         (a–b) · RT x–y", which is exactly the provenance a record wants, so
         it is passed as written rather than assembled a second time here.
         """
-        current = self._current_spectrum()
+        current = self._sticks_on_screen()
         if current is None:
             self._update_status("Show a spectrum first.")
             return None
         mz, intensity = current
-        if not self.act_centroid.isChecked():
-            mz, intensity = centroid_spectrum(mz, intensity)
         precursor = None
         context = {"title": self.spectrum.title,
                    # whether the adduct on the record was measured or assumed
@@ -2385,7 +2552,7 @@ class ExplorerWorkspace(QtWidgets.QMainWindow):
             channel = self.active_ref.channel
             if channel is not None:
                 info = channel.info
-                precursor = info.precursor
+                precursor = self._shown_precursor(channel)
                 context["channel"] = info.label
                 context["polarity"] = info.polarity
                 context["collision_energy"] = info.collision_energy

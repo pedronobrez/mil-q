@@ -60,6 +60,29 @@ DARK = {
 }
 
 
+#: a scheme imposed for the length of an export ("light" / "dark"), so a
+#: figure can be drawn in the theme its destination wants rather than the
+#: one the window is wearing. None in ordinary use. See `forced_scheme`.
+_FORCED: str | None = None
+
+
+class forced_scheme:
+    """`with forced_scheme("dark"):` — tokens answer for that scheme."""
+
+    def __init__(self, scheme: str | None):
+        self.scheme = scheme if scheme in ("light", "dark") else None
+
+    def __enter__(self):
+        global _FORCED
+        self._before, _FORCED = _FORCED, self.scheme or _FORCED
+        return self
+
+    def __exit__(self, *_exc):
+        global _FORCED
+        _FORCED = self._before
+        return False
+
+
 def is_dark() -> bool:
     """
     Is the system asking for a dark interface?
@@ -68,6 +91,8 @@ def is_dark() -> bool:
     palette makes it explicit, and Qt then stops updating it when the system
     theme changes — so a palette-based answer would be our own last answer.
     """
+    if _FORCED is not None:
+        return _FORCED == "dark"
     app = QtWidgets.QApplication.instance()
     if app is None:
         return False

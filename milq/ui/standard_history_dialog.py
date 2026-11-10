@@ -24,6 +24,7 @@ from ..standard_history import (METRICS, MIN_RECORDS, Series, StandardHistory,
                                 axis_split_note, caveat, ppm_text,
                                 read_history, verdict, write_csv)
 from . import theme
+from . import chart_export
 from .help_window import describe, open_manual
 
 HELP_PAGE = "standard-history"
@@ -87,6 +88,7 @@ class StandardHistoryDialog(QtWidgets.QDialog):
 
         body = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.plot = pg.PlotWidget(background=theme.background())
+        chart_export.install(self, 'standard history')
         self.plot.showGrid(x=True, y=True, alpha=0.15)
         self.plot.setLabel("bottom", "Record, in acquisition order")
         self.plot.setToolTip(

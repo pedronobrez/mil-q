@@ -14,6 +14,7 @@ import pyqtgraph as pg
 from PyQt6 import QtCore, QtWidgets
 
 from . import theme
+from . import chart_export
 from ..qc import (ALWAYS_OUT_PERCENT, MIN_SNR, OUTLIER_SIGMA,
                   OUT_PERCENT, RESPONSE_INDEX, WARN_SIGMA, BatchQC,
                   ControlChart, batch_qc, exclude_failed, failed_injections)
@@ -80,6 +81,7 @@ class QualityPanel(QtWidgets.QWidget):
         body = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
 
         self.plot = pg.PlotWidget(background=theme.background())
+        chart_export.install(self, 'control chart')
         self.plot.showGrid(x=True, y=True, alpha=0.15)
         self.plot.setLabel("bottom", "Injection")
         self.plot.setToolTip(

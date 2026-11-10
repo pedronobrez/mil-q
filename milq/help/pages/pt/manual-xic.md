@@ -14,6 +14,29 @@ marcados com **Extract from every checked channel** assinalado. A lista
 **Active XICs** os nomeia; selecione um e pressione Delete para removê-lo, ou
 **Clear XICs** para remover todos.
 
+## De onde o traço é lido
+
+**Source** escolhe quais scans o traço soma:
+
+| Source | O que lê |
+|---|---|
+| Active channel | o canal ativo, todos os scans (o padrão) |
+| MS1 (survey) | o canal de survey — todos os de um método agendado, num só eixo de tempo |
+| All MS2 scans | todos os scans de íons-produto de todos os canais, unidos pelo tempo de retenção |
+| Gated by precursor m/z | só os scans de íons-produto cujo **próprio** precursor está dentro da tolerância dada ao lado (0.05 Da por padrão), de todos os canais, unidos pelo tempo de retenção |
+
+O filtro por precursor é o que a aquisição dependente de dados (DDA)
+precisa. Um método IDA da SCIEX tem slots dependentes — experimentos
+`TOF PI` preenchidos ciclo a ciclo com o que o survey ofereceu — e um slot
+de uma corrida de TripleTOF 5600 isolou 298 precursores diferentes nos seus
+405 ciclos disparados. Extrair um fragmento do slot ativo soma todos eles;
+filtrar por 627.8457 soma só os scans que isolaram 627.8457, em qualquer
+slot que tenham caído. Scans de um mesmo ciclo compartilham o seu tempo de
+retenção, e scans no mesmo tempo são somados, de modo que o traço tem um
+ponto por tempo. A aritmética continua sendo a extração de cada canal (a da
+SCIEX num `.wiff`), sem os scans que isolaram outra coisa. Ver
+[[how-wiff-is-read]].
+
 ## A partir do espectro
 
 Shift+arrastar sobre uma faixa de m/z no painel do espectro, depois clique

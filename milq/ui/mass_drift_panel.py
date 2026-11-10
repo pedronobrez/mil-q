@@ -14,6 +14,7 @@ import pyqtgraph as pg
 from PyQt6 import QtCore, QtWidgets
 
 from . import theme
+from . import chart_export
 from ..mass_drift import DRIFT_PPM, MASS_INDEX, MassDrift, MassTrend, mass_drift
 from ..recalibrate import describe as describe_corrections
 from ..recalibrate import MAX_LOCK_ERROR_PPM, fit_batch, lock_mass_refusal
@@ -71,6 +72,7 @@ class MassDriftPanel(QtWidgets.QWidget):
 
         body = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self.plot = pg.PlotWidget(background=theme.background())
+        chart_export.install(self, 'mass drift')
         self.plot.showGrid(x=True, y=True, alpha=0.15)
         self.plot.setLabel("bottom", "Injection")
         self.plot.setLabel("left", "ppm from the run's median")

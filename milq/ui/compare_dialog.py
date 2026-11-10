@@ -15,6 +15,7 @@ import pyqtgraph as pg
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 from . import theme
+from . import chart_export
 from ..compare import SENSITIVE_PERCENT, Comparison
 from ..processing import ALGORITHM_LABELS, GaussianModel
 from ..quantify import extract_xic
@@ -105,6 +106,7 @@ class ComparisonDialog(QtWidgets.QDialog):
 
         below = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.plot = pg.PlotWidget(background=theme.background())
+        chart_export.install(self, 'algorithm comparison')
         self.plot.showGrid(x=True, y=True, alpha=0.12)
         self.plot.setMenuEnabled(False)
         theme.style_axes(self.plot, faint=True, tick_points=8)

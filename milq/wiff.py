@@ -86,6 +86,56 @@ def _double_array(values) -> "object":
 
 
 # --------------------------------------------------------------------------- #
+#: what a channel is, in the words of the suite's command-line contract
+#: (`docs/CLI-CONTRACT.md`). "" on a `ChannelInfo` built by hand means "not
+#: said", and the channel is then judged by its precursor as it always was.
+KIND_MS1 = "ms1"
+KIND_IDA_SLOT = "ida-slot"          # one SCIEX IDA dependent experiment
+KIND_DDA_EVENTS = "dda-events"      # every data-dependent MS2 of an mzML
+KIND_SWATH = "swath"                # one isolation window
+KIND_MRM = "mrm"
+KIND_PRODUCT = "product"            # a fixed precursor's product-ion scan
+KIND_OTHER = "other"
+#: the kinds whose precursor is a property of each scan, not of the channel
+PER_SCAN_KINDS = (KIND_IDA_SLOT, KIND_DDA_EVENTS)
+
+
+@dataclass(frozen=True)
+class ScanDetails:
+    """
+    What each scan of a channel isolated, one entry per scan, aligned with
+    the channel's `rt`.
+
+    `parent_mz` is the precursor **actually isolated for that scan**. For a
+    SCIEX IDA dependent experiment it is `MassSpectrumInfo.ParentMZ`, which
+    changes almost every cycle; the experiment's `FixedMasses` is a
+    placeholder the method was written with and is never used for one. A
+    scan that isolated nothing — the survey, or a dependent slot the cycle
+    did not trigger — has NaN, never zero. `isolation` is the full width of
+    the isolation window in Da, NaN where the file does not say;
+    `collision_energy` NaN likewise; `charge` 0 where not stated.
+    """
+
+    parent_mz: np.ndarray
+    isolation: np.ndarray
+    collision_energy: np.ndarray
+    charge: np.ndarray
+
+    @property
+    def triggered(self) -> np.ndarray:
+        """Which scans isolated a precursor."""
+        return np.isfinite(self.parent_mz)
+
+    @classmethod
+    def constant(cls, n: int, parent: float | None, isolation: float | None,
+                 collision_energy: float | None) -> "ScanDetails":
+        """A channel whose every scan isolated the same thing."""
+        def filled(value):
+            return np.full(n, np.nan if value is None else float(value))
+        return cls(filled(parent), filled(isolation), filled(collision_energy),
+                   np.zeros(n, dtype=np.int64))
+
+
 @dataclass(frozen=True)
 class ChannelInfo:
     """Metadata of one experiment (channel) of the acquisition method."""
@@ -110,9 +160,26 @@ class ChannelInfo:
     #: the precursor's charge, where the file states one. mzML records it in
     #: `selectedIon`; a `.wiff` does not carry it at all.
     charge: int | None = None
+    #: one of the `KIND_*` names above; "" when whoever built this did not
+    #: say. An IDA dependent slot and an mzML's data-dependent events carry
+    #: **no** channel precursor (`precursor` is None) — theirs is per scan,
+    #: in `Channel.scan_details()` — and are still not MS1.
+    kind: str = ""
+    #: whether the scans are stored as centroids already (an mzML's
+    #: `centroid spectrum`, a `.wiff` scan's `CentroidMode`)
+    centroided: bool = False
+
+    @property
+    def per_scan(self) -> bool:
+        """Whether the precursor changes from scan to scan."""
+        return self.kind in PER_SCAN_KINDS
 
     @property
     def is_ms1(self) -> bool:
+        if self.kind == KIND_MS1:
+            return True
+        if self.per_scan:
+            return False
         return self.precursor is None
 
     @property
@@ -120,11 +187,25 @@ class ChannelInfo:
         if self.is_ms1:
             return f"{self.name}  ({self.start_mass:.0f}-{self.end_mass:.0f})"
         ce = f", CE {self.collision_energy:g}" if self.collision_energy else ""
+        if self.precursor is None:
+            what = self._per_scan_word()
+            return f"{self.name}  {what}  ->  {self.start_mass:.0f}-{self.end_mass:.0f}{ce}"
         return f"{self.name}  {self.precursor:.2f}  ->  {self.start_mass:.0f}-{self.end_mass:.0f}{ce}"
 
     @property
     def short_label(self) -> str:
-        return self.name if self.is_ms1 else f"{self.name} {self.precursor:.2f}"
+        if self.is_ms1:
+            return self.name
+        if self.precursor is None:
+            return f"{self.name} {self._per_scan_word()}"
+        return f"{self.name} {self.precursor:.2f}"
+
+    def _per_scan_word(self) -> str:
+        if self.kind == KIND_IDA_SLOT:
+            return f"IDA slot {self.index}"
+        if self.kind == KIND_DDA_EVENTS:
+            return f"events ({self.n_scans})"
+        return "no precursor"
 
 
 # --------------------------------------------------------------------------- #
@@ -136,9 +217,32 @@ class Channel:
         self._exp = sample._ms.GetMSExperiment(index)
         self.index = index
         self._tic: tuple[np.ndarray, np.ndarray] | None = None
+        self._scan_details: ScanDetails | None = None
+        self._isolation: float | None = None
         self.info = self._read_info()
 
     # -- metadata ------------------------------------------------------------ #
+    @staticmethod
+    def _kind_of(details, precursor: float | None) -> str:
+        """
+        What the experiment is. `IDAType` first: a dependent experiment
+        declares `FixedMasses` like any product-ion scan, and on the
+        TripleTOF 5600 IDA acquisition they read 1.0, 2.0 … 8.0 — the
+        slot's number, not a mass — and on MIL-X's ZenoTOF data 829.5 in all
+        24 slots. Neither is anything that was isolated.
+        """
+        ida = str(getattr(details, "IDAType", "") or "")
+        if ida in ("Dependent", "Confirmation"):
+            return KIND_IDA_SLOT
+        if bool(getattr(details, "IsSwath", False)):
+            return KIND_SWATH
+        experiment = str(getattr(details, "ExperimentType", "") or "")
+        if experiment in ("MRM", "SIM"):
+            return KIND_MRM
+        if precursor is not None:
+            return KIND_PRODUCT
+        return KIND_MS1 if experiment == "MS" else KIND_OTHER
+
     def _read_info(self) -> ChannelInfo:
         d = self._exp.Details
         ranges = list(d.MassRangeInfo) if d.MassRangeInfo else []
@@ -149,15 +253,36 @@ class Channel:
             fixed = list(first.FixedMasses or [])
             if fixed:
                 precursor = float(fixed[0])
+        if first is not None:
+            try:
+                width = float(getattr(first, "IsolationWindow", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                width = 0.0
+            self._isolation = width if width > 0 else None
+        kind = self._kind_of(d, precursor)
 
         ce = None
+        centroided = False
         try:
-            info = self._exp.GetMassSpectrumInfo(0)
-            value = getattr(info, "CollisionEnergy", None)
-            if value is not None and float(value) != 0.0:
-                ce = float(value)
+            centroided = bool(self._exp.GetMassSpectrumInfo(0).CentroidMode)
         except Exception:
-            ce = None
+            pass
+        if kind == KIND_IDA_SLOT:
+            # the placeholder is not a precursor, and cycle 0 is usually a
+            # slot nothing triggered, whose collision energy reads 0: the
+            # energy is the first triggered scan's
+            precursor = None
+            energies = self.scan_details().collision_energy
+            energies = energies[np.isfinite(energies) & (energies != 0.0)]
+            ce = float(energies[0]) if energies.size else None
+        else:
+            try:
+                info = self._exp.GetMassSpectrumInfo(0)
+                value = getattr(info, "CollisionEnergy", None)
+                if value is not None and float(value) != 0.0:
+                    ce = float(value)
+            except Exception:
+                ce = None
 
         return ChannelInfo(
             index=self.index,
@@ -169,7 +294,74 @@ class Channel:
             end_mass=float(d.EndMass),
             n_scans=int(d.NumberOfScans),
             collision_energy=ce,
+            kind=kind,
+            centroided=centroided,
         )
+
+    def scan_details(self) -> ScanDetails:
+        """
+        What every scan isolated (see `ScanDetails`), read once and kept.
+
+        For an IDA dependent slot this asks Clearcore2 for each cycle's
+        `MassSpectrumInfo` — 13 ms for the 1,986 cycles of a TripleTOF 5600
+        slot — and a cycle whose `ParentMZ` is not positive is a slot that
+        was not triggered (no data points either: the two agreed on all
+        1,986 cycles of the slot measured). Every other channel isolated one
+        thing for the whole run and is not read scan by scan.
+        """
+        if self._scan_details is None:
+            d = self._exp.Details
+            n = int(d.NumberOfScans)
+            info = getattr(self, "info", None)
+            kind = info.kind if info is not None else self._kind_of(d, None)
+            if kind != KIND_IDA_SLOT:
+                self._scan_details = ScanDetails.constant(
+                    n, info.precursor if info is not None else None,
+                    None if info is None or info.is_ms1 else self._isolation,
+                    info.collision_energy if info is not None else None)
+            else:
+                parent = np.full(n, np.nan)
+                energy = np.full(n, np.nan)
+                charge = np.zeros(n, dtype=np.int64)
+                for cycle in range(n):
+                    try:
+                        spectrum_info = self._exp.GetMassSpectrumInfo(cycle)
+                        if int(spectrum_info.MSLevel) < 2:
+                            continue
+                        value = float(spectrum_info.ParentMZ)
+                    except Exception:
+                        continue
+                    if value <= 0:
+                        continue            # a slot this cycle did not trigger
+                    parent[cycle] = value
+                    try:
+                        energy[cycle] = float(spectrum_info.CollisionEnergy)
+                        charge[cycle] = int(spectrum_info.ParentChargeState)
+                    except Exception:
+                        pass
+                width = np.full(n, np.nan if self._isolation is None
+                                else self._isolation)
+                width[~np.isfinite(parent)] = np.nan
+                self._scan_details = ScanDetails(parent, width, energy, charge)
+        return self._scan_details
+
+    def scan_precursors(self) -> np.ndarray:
+        """`scan_details().parent_mz`: the precursor of every scan, NaN for none."""
+        return self.scan_details().parent_mz
+
+    def scan_points(self) -> np.ndarray:
+        """
+        How many data points each scan stored. One `GetMassSpectrum` per
+        cycle (about 0.1 ms each, 1.8 s for an 18,000-scan IDA run), so the
+        command line keeps the answer in its sidecar (`sidecar.points`).
+        """
+        out = np.zeros(int(self.info.n_scans), dtype=np.int64)
+        for cycle in range(out.size):
+            try:
+                out[cycle] = int(self._exp.GetMassSpectrum(cycle).NumDataPoints)
+            except Exception:
+                out[cycle] = 0
+        return out
 
     # -- chromatograms -------------------------------------------------------- #
     def tic(self) -> tuple[np.ndarray, np.ndarray]:
@@ -235,6 +427,42 @@ class Channel:
         """Average spectrum of the scans inside the given time range."""
         lo, hi = sorted((float(rt_start), float(rt_end)))
         return self._read_spectrum(self._exp.GetMassSpectrum(lo, hi), add_zeros)
+
+    def vendor_centroids(self, scan: int | None = None,
+                         rt_start: float | None = None,
+                         rt_end: float | None = None
+                         ) -> tuple[np.ndarray, np.ndarray] | None:
+        """
+        SCIEX's own centroids of one scan, or of the average over a time
+        range: `MSExperiment.GetPeakArray(cycle)` or `(rt_start, rt_end)`,
+        each peak's fitted apex (`apexX`, `apexY`), sorted by mass.
+
+        The spectral peak finder Analyst and the closed MS-DIAL reader use,
+        and what MIL-X centroids `.wiff` with. None where it cannot run or
+        finds nothing — an MRM or SIM experiment is not a spectrum to centroid
+        — and the caller then centroids locally (`centroiding`).
+        """
+        if self.info.kind == KIND_MRM:
+            return None
+        try:
+            if scan is not None:
+                index = int(np.clip(scan, 0, max(self.info.n_scans - 1, 0)))
+                peaks = self._exp.GetPeakArray(index)
+            elif rt_start is not None and rt_end is not None:
+                lo, hi = sorted((float(rt_start), float(rt_end)))
+                peaks = self._exp.GetPeakArray(lo, hi)
+            else:
+                return None
+        except Exception:
+            return None
+        if peaks is None or len(peaks) == 0:
+            return None
+        n = len(peaks)
+        mz = np.fromiter((float(p.apexX) for p in peaks), dtype=float, count=n)
+        height = np.fromiter((float(p.apexY) for p in peaks), dtype=float, count=n)
+        keep = (mz > 0) & (height > 0)
+        order = np.argsort(mz[keep], kind="stable")
+        return mz[keep][order], height[keep][order]
 
     def parameters(self) -> dict[str, str]:
         """Experiment parameters from the method (DP, CE, CES, ...)."""

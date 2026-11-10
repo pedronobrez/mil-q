@@ -39,7 +39,8 @@ from xml.etree import ElementTree as ET
 
 import numpy as np
 
-from .wiff import ChannelInfo
+from .wiff import (KIND_DDA_EVENTS, KIND_IDA_SLOT, KIND_MS1, KIND_OTHER,
+                   KIND_PRODUCT, KIND_SWATH, ChannelInfo, ScanDetails)
 
 #: PSI-MS controlled vocabulary accessions this reader acts on. Anything not
 #: listed is carried past without comment: an mzML written by a vendor tool
@@ -49,6 +50,8 @@ SCAN_START_TIME = "MS:1000016"
 SELECTED_ION_MZ = "MS:1000744"
 CHARGE_STATE = "MS:1000041"
 ISOLATION_TARGET = "MS:1000827"
+ISOLATION_LOWER = "MS:1000828"
+ISOLATION_UPPER = "MS:1000829"
 COLLISION_ENERGY = "MS:1000045"
 SCAN_WINDOW_LOWER = "MS:1000501"
 SCAN_WINDOW_UPPER = "MS:1000500"
@@ -98,6 +101,28 @@ NOT_A_DISSOCIATION = {
 #: Vendors write the same transition with slightly different rounding from
 #: scan to scan, and a channel per rounding error would be useless.
 PRECURSOR_TOLERANCE = 0.01
+
+#: data-dependent acquisition, recognised from a file that does not say so.
+#: Scans with no place in a repeating cycle, in a run that has survey scans,
+#: whose precursors take at least `DDA_MIN_PRECURSORS` distinct values, and
+#: where the typical precursor was isolated in at most `DDA_MAX_SHARE` of
+#: the survey scans: a DIA window or an unscheduled targeted list is
+#: acquired in (nearly) every cycle, a data-dependent precursor only while
+#: it elutes. The first version asked for a median of three scans a
+#: precursor — dynamic exclusion — and an IDA method with no exclusion
+#: (MIL-X's `make_synthetic_mzml.py --ida`: 12 precursors, ~25 scans each,
+#: 501 surveys) became twenty product channels. `DDA_MAX_REPEATS` is kept as
+#: the other way to qualify. The stepped-precursor direct infusion of
+#: `tests/real/test_orbitrap.py` has no survey scan and keeps its 82
+#: channels.
+DDA_MIN_PRECURSORS = 10
+DDA_MAX_REPEATS = 3
+DDA_MAX_SHARE = 0.5
+
+#: the narrowest isolation window called a SWATH window when a file states
+#: one. Data-dependent isolation is about 1 Da on a TripleTOF and 0.7–2 on an
+#: Orbitrap; variable SWATH windows start around 5. Only a label hangs on it.
+SWATH_MIN_WIDTH = 3.0
 
 #: our own writer records the experiment a spectrum came from, so a file this
 #: application wrote reconstructs exactly rather than by inference
@@ -343,6 +368,8 @@ class _ScanHeader:
     n_points: int
     experiment: int | None          # only in files this application wrote
     experiment_name: str
+    #: the isolation window's full width in Da, None when not stated
+    isolation: float | None = None
 
     @property
     def key(self) -> tuple:
@@ -384,10 +411,34 @@ class MzmlChannel:
         # instance alive for the life of the process, and with maxsize=1 it
         # caches nothing at all when the caller walks 81 channels in turn
         self._tic: tuple[np.ndarray, np.ndarray] | None = None
+        self._scan_details: ScanDetails | None = None
         self.info = self._read_info()
+
+    def _kind(self) -> str:
+        """
+        What the scans are. A channel whose scans isolated different
+        precursors is data-dependent: an experiment this application wrote
+        (the IDA slot it came from) or, in anyone else's file, the
+        data-dependent events. One precursor throughout is a product-ion
+        scan, or a SWATH window when the file states a window at least
+        `SWATH_MIN_WIDTH` wide — a label, which nothing downstream decides on.
+        """
+        first = self._headers[0]
+        if first.ms_level <= 1:
+            return KIND_MS1
+        known = [h.precursor for h in self._headers if h.precursor is not None]
+        if not known:
+            return KIND_OTHER
+        if max(known) - min(known) > PRECURSOR_TOLERANCE:
+            return KIND_IDA_SLOT if first.experiment is not None else KIND_DDA_EVENTS
+        if first.isolation is not None and first.isolation >= SWATH_MIN_WIDTH:
+            return KIND_SWATH
+        return KIND_PRODUCT
 
     def _read_info(self) -> ChannelInfo:
         first = self._headers[0]
+        kind = self._kind()
+        per_scan = kind in (KIND_IDA_SLOT, KIND_DDA_EVENTS)
         if first.experiment_name:
             name = first.experiment_name
         elif first.ms_level <= 1:
@@ -399,14 +450,42 @@ class MzmlChannel:
             name=name,
             experiment_type="MS" if first.ms_level <= 1 else "Product Ion",
             polarity=first.polarity,
-            precursor=first.precursor,
-            start_mass=first.low,
-            end_mass=first.high,
+            # a precursor that changes from scan to scan is not the channel's
+            precursor=None if per_scan else first.precursor,
+            # events each set their own range; the channel spans them all
+            start_mass=(min(h.low for h in self._headers)
+                        if kind == KIND_DDA_EVENTS else first.low),
+            end_mass=(max(h.high for h in self._headers)
+                      if kind == KIND_DDA_EVENTS else first.high),
             n_scans=len(self._headers),
             collision_energy=first.collision_energy,
             activation=first.activation,
-            charge=first.charge,
+            charge=None if per_scan else first.charge,
+            kind=kind,
+            centroided=bool(first.centroided),
         )
+
+    def scan_details(self) -> ScanDetails:
+        """What every scan isolated, straight from its header."""
+        if self._scan_details is None:
+            def column(values, empty=np.nan):
+                return np.array([empty if v is None else float(v)
+                                 for v in values], dtype=float)
+            headers = self._headers
+            self._scan_details = ScanDetails(
+                column(h.precursor if h.ms_level > 1 else None for h in headers),
+                column(h.isolation if h.ms_level > 1 else None for h in headers),
+                column(h.collision_energy for h in headers),
+                np.array([h.charge or 0 for h in headers], dtype=np.int64))
+        return self._scan_details
+
+    def scan_precursors(self) -> np.ndarray:
+        """`scan_details().parent_mz`: the precursor of every scan, NaN for none."""
+        return self.scan_details().parent_mz
+
+    def scan_points(self) -> np.ndarray:
+        """How many data points each scan stored, from its header."""
+        return np.array([h.n_points for h in self._headers], dtype=np.int64)
 
     # -- chromatograms -------------------------------------------------------- #
     def tic(self) -> tuple[np.ndarray, np.ndarray]:
@@ -580,6 +659,16 @@ class MzmlChannel:
         total = np.bincount(where, weights=heights, minlength=axis.size)
         return axis, total / len(parts)
 
+    def vendor_centroids(self, scan: int | None = None,
+                         rt_start: float | None = None,
+                         rt_end: float | None = None
+                         ) -> tuple[np.ndarray, np.ndarray] | None:
+        """
+        None: an mzML carries no vendor's peak finder. A centroided file is
+        already centroids; a profile one is centroided locally.
+        """
+        return None
+
     def parameters(self) -> dict[str, str]:
         first = self._headers[0]
         out = {
@@ -587,7 +676,13 @@ class MzmlChannel:
             "Scans": str(len(self._headers)),
             "Mass range": f"{first.low:g} – {first.high:g}",
         }
-        if first.precursor is not None:
+        if self.info.per_scan:
+            parents = self.scan_precursors()
+            parents = parents[np.isfinite(parents)]
+            out["Precursor"] = (f"per scan: {np.unique(np.round(parents, 4)).size} "
+                                f"distinct, {parents.min():.4f}–{parents.max():.4f}"
+                                if parents.size else "per scan: none")
+        elif first.precursor is not None:
             out["Precursor"] = f"{first.precursor:.4f}"
         if first.charge is not None:
             out["Charge"] = str(first.charge)
@@ -770,7 +865,7 @@ class MzmlFile:
         self.source_file = ""
         self.software = ""
         self._read_header()
-        self.headers = self._read_scan_headers()
+        self.headers = self._indexed_headers()
         self.sample_names = [self.run_id or os.path.splitext(self.filename)[0]]
         self._samples: dict[int, MzmlSample] = {}
 
@@ -831,6 +926,24 @@ class MzmlFile:
         return _model_in(block)
 
     # -- the scan index --------------------------------------------------------- #
+    def _indexed_headers(self) -> list[_ScanHeader]:
+        """
+        The headers from a sidecar index where one is kept for this exact
+        file (`sidecar.INDEX_DIR`, set by the command line or by
+        `MILQ_INDEX_DIR`), read and written there otherwise. The header
+        parse is the whole cost of an open (1.4 of 1.5 s on 19,440 spectra);
+        the index is keyed on the path, size and modification time, so an
+        edited file is never served stale, and every failure is a miss.
+        """
+        from . import sidecar
+
+        cached = sidecar.load_headers(self.path)
+        if cached is not None:
+            return cached
+        headers = self._read_scan_headers()
+        sidecar.save_headers(self.path, headers)
+        return headers
+
     def _read_scan_headers(self) -> list[_ScanHeader]:
         """
         One pass over the file, reading each spectrum's description but not
@@ -868,6 +981,10 @@ class MzmlFile:
         low = _float_or_none(params.get(SCAN_WINDOW_LOWER))
         high = _float_or_none(params.get(SCAN_WINDOW_UPPER))
         experiment = params.get(EXPERIMENT_PARAM)
+        lower = _float_or_none(params.get(ISOLATION_LOWER))
+        upper = _float_or_none(params.get(ISOLATION_UPPER))
+        isolation = (lower + upper if lower is not None and upper is not None
+                     and lower + upper > 0 else None)
         return _ScanHeader(
             index=index,
             offset=start,
@@ -890,6 +1007,7 @@ class MzmlFile:
             n_points=int(element.get("defaultArrayLength", 0) or 0),
             experiment=int(experiment) if experiment not in (None, "") else None,
             experiment_name=params.get(EXPERIMENT_NAME_PARAM, ""),
+            isolation=isolation,
         )
 
     def _binaries_for(self, header: _ScanHeader) -> tuple[_Binary, ...] | None:
@@ -950,16 +1068,38 @@ class MzmlFile:
         there is not one — data-dependent acquisition has no repeating order,
         and there the properties are all there is.
         """
-        cycles = acquisition_cycles([h.key for h in self.headers])
+        cycles = _without_lone_periods(
+            [h.key for h in self.headers],
+            acquisition_cycles([h.key for h in self.headers]))
+        dda = _data_dependent(self.headers, cycles)
         grouped: dict[tuple, list[_ScanHeader]] = {}
-        periods: dict[tuple, int | None] = {}
+        periods: dict[tuple, set] = {}
         # strict: one position per spectrum, and a mismatch would silently
         # drop the scans past the end of the shorter list
         for position, header in zip(cycles, self.headers, strict=True):
-            key = header.key if position is None else position
+            # a file this application wrote names each scan's experiment, and
+            # that is the answer rather than an inference. It matters for
+            # IDA: the writer leaves out the cycles a slot did not trigger,
+            # so the order no longer repeats — and the first cycles of a run,
+            # before anything is above the threshold, are survey scans alone,
+            # which look like a cycle of one and split the survey in two.
+            if header.experiment is not None:
+                key = header.key
+            elif position is None:
+                # data-dependent MS2 is one channel of events, each scan with
+                # its own precursor, as MIL-X shows it — not one per precursor
+                events = _events_key(header)
+                key = ("dda",) + events if events in dda else header.key
+            else:
+                key = position
             grouped.setdefault(key, []).append(header)
-            periods.setdefault(key, position[0] if position is not None else None)
-        return [MzmlChannel(sample, index, group, periods[key])
+            periods.setdefault(key, set()).add(
+                position[0] if position is not None else None)
+        # a channel is summed by cycle only when every scan of it sits in one
+        # period the order showed; anything else stands on its own times
+        return [MzmlChannel(sample, index, group,
+                            next(iter(periods[key])) if len(periods[key]) == 1
+                            else None)
                 for index, (key, group) in enumerate(grouped.items())]
 
     # -- the same surface as WiffFile -------------------------------------------- #
@@ -1015,6 +1155,63 @@ MAX_CYCLE = 4096
 #: consecutive stretches that happen to match are a coincidence; twenty are a
 #: method.
 MIN_REPEATS = 4
+
+
+def _without_lone_periods(keys: list, cycles: list) -> list:
+    """
+    Forget a "period" whose experiments also run outside any cycle.
+
+    A data-dependent run begins with survey scans alone — nothing is above
+    the trigger yet — and the first 21 of a TripleTOF 5600 IDA run read as a
+    cycle of one run 21 times. The survey then became two channels, 21 scans
+    and 1,965. A real period of a scheduled method has its experiments
+    nowhere else in the run.
+    """
+    loose = {key for key, position in zip(keys, cycles) if position is None}
+    if not loose:
+        return cycles
+    # a period any of whose experiments also runs outside every cycle is a
+    # stretch where the order happened to repeat — a data-dependent run with
+    # one compound eluting alone repeats survey, A, survey, A — and not an
+    # entry of a scheduled method, whose experiments occur nowhere else.
+    # It was first done for periods of one experiment only; the synthetic
+    # IDA study split its survey into channels of 474, 9, 10 and 8 scans.
+    spurious = {position[0] for key, position in zip(keys, cycles)
+                if position is not None and key in loose}
+    return [None if position is not None and position[0] in spurious else position
+            for position in cycles]
+
+
+def _events_key(header: _ScanHeader) -> tuple:
+    """What data-dependent scans share: level, polarity, activation."""
+    return (header.ms_level, header.polarity, header.activation)
+
+
+def _data_dependent(headers: list[_ScanHeader], cycles: list) -> set:
+    """
+    The `_events_key`s whose scans are data-dependent MS2 (see
+    `DDA_MIN_PRECURSORS`). The collision energy and the mass range are left
+    out of the key on purpose: a DDA method rolls the energy with the
+    precursor, and an Orbitrap sets the scan's upper mass from it.
+    """
+    surveys = sum(1 for h in headers if h.ms_level <= 1)
+    if not surveys:
+        return set()
+    precursors: dict[tuple, list[float]] = {}
+    for position, header in zip(cycles, headers):
+        if (position is not None or header.experiment is not None
+                or header.ms_level <= 1 or header.precursor is None):
+            continue
+        precursors.setdefault(_events_key(header), []).append(header.precursor)
+    found = set()
+    for key, values in precursors.items():
+        _, counts = np.unique(np.round(np.asarray(values) / PRECURSOR_TOLERANCE),
+                              return_counts=True)
+        typical = float(np.median(counts)) if counts.size else 0.0
+        if counts.size >= DDA_MIN_PRECURSORS and (
+                typical <= DDA_MAX_REPEATS or typical <= DDA_MAX_SHARE * surveys):
+            found.add(key)
+    return found
 
 
 def acquisition_cycles(keys: list) -> list:
@@ -1359,7 +1556,7 @@ def _activation_accession(name: str) -> str:
 
 
 def write_mzml(sample, path: str | os.PathLike, compress: bool = True,
-               progress=None) -> str:
+               progress=None, centroid: str | None = None) -> str:
     """
     Write one sample out as indexed mzML.
 
@@ -1374,6 +1571,18 @@ def write_mzml(sample, path: str | os.PathLike, compress: bool = True,
     out of a profile spectrum and its own library can put them back; that is a
     rendering step, and baking it into an exported file would be exporting a
     picture rather than a measurement.
+
+    The precursor written is each scan's own (`scan_details`): for a SCIEX
+    IDA dependent slot that is what the cycle isolated, never the slot's
+    placeholder, and a cycle that triggered nothing is not written at all —
+    it has no data points and no precursor, and an MSn spectrum without a
+    precursor is not one. The read-back channel therefore has fewer scans
+    than the slot has cycles; every scan it has is identical.
+
+    `centroid` writes centroids instead ("vendor": the reader's own peak
+    finder where it has one, the local one otherwise; "local": this
+    program's), marked `centroid spectrum`. The default writes what the
+    instrument stored.
     """
     path = str(path)
     scans = []
@@ -1384,9 +1593,13 @@ def write_mzml(sample, path: str | os.PathLike, compress: bool = True,
         # measured on one acquisition, recomputing it moved every integrated
         # area by about two per cent.
         times, totals = channel.tic()
+        details = _details_of(channel, len(times))
+        per_scan = bool(getattr(channel.info, "per_scan", False))
         for scan in range(len(times)):
+            if per_scan and not np.isfinite(details.parent_mz[scan]):
+                continue                # an IDA slot this cycle did not trigger
             total = float(totals[scan]) if scan < len(totals) else None
-            scans.append((channel, scan, float(times[scan]), total))
+            scans.append((channel, scan, float(times[scan]), total, details))
     # spectra go in time order, as an acquisition produces them
     scans.sort(key=lambda item: (item[2], item[0].index))
 
@@ -1403,15 +1616,18 @@ def write_mzml(sample, path: str | os.PathLike, compress: bool = True,
                             instrument=_xml_escape(getattr(sample, "instrument", "")),
                             started=_xml_escape(getattr(sample, "acquisition_time", "") or ""),
                             count=len(scans)))
-        for index, (channel, scan, rt, total) in enumerate(scans):
+        for index, (channel, scan, rt, total, details) in enumerate(scans):
             if progress is not None and index % 500 == 0:
                 progress(index, len(scans))
             mz, intensity = channel.spectrum(scan, add_zeros=False)
+            if centroid:
+                mz, intensity = _centroided(channel, scan, mz, intensity, centroid)
             identifier = (f"index={index} experiment={channel.index} "
                           f"scan={scan}")
             offsets.append((identifier, handle.tell()))
             emit(_spectrum_xml(index, identifier, channel, rt, mz, intensity,
-                               compress, total))
+                               compress, total, _scan_precursor(details, scan),
+                               centroided=bool(centroid)))
         emit("</spectrumList></run></mzML>")
 
         index_offset = handle.tell()
@@ -1434,10 +1650,53 @@ def write_mzml(sample, path: str | os.PathLike, compress: bool = True,
     return path
 
 
+def _centroided(channel, scan: int, mz, intensity, how: str):
+    from .processing import centroid_spectrum
+
+    if str(how).lower() in ("vendor", "sciex"):
+        reader = getattr(channel, "vendor_centroids", None)
+        found = reader(scan=scan) if reader is not None else None
+        if found is not None and len(found[0]):
+            return found
+    if len(mz) == 0:
+        return np.zeros(0), np.zeros(0)
+    return centroid_spectrum(np.asarray(mz, dtype=float),
+                             np.asarray(intensity, dtype=float))
+
+
+def _details_of(channel, n: int) -> ScanDetails:
+    """A channel's per-scan details, or its single precursor repeated."""
+    reader = getattr(channel, "scan_details", None)
+    if reader is not None:
+        return reader()
+    info = channel.info
+    return ScanDetails.constant(n, info.precursor, None, info.collision_energy)
+
+
+def _scan_precursor(details: ScanDetails, scan: int):
+    """(parent m/z, isolation width, collision energy, charge) of one scan."""
+    def at(values):
+        value = float(values[scan]) if scan < len(values) else float("nan")
+        return value if np.isfinite(value) else None
+    charge = int(details.charge[scan]) if scan < len(details.charge) else 0
+    return (at(details.parent_mz), at(details.isolation),
+            at(details.collision_energy), charge or None)
+
+
 def _spectrum_xml(index: int, identifier: str, channel, rt: float,
                   mz: np.ndarray, intensity: np.ndarray,
-                  compress: bool, total: float | None = None) -> str:
+                  compress: bool, total: float | None = None,
+                  isolated=None, centroided: bool = False) -> str:
     info = channel.info
+    if isolated is None:
+        isolated = (info.precursor, None, info.collision_energy, info.charge)
+    parent, width, energy, charge = isolated
+    if not getattr(info, "per_scan", False):
+        # a fixed channel's own figures, as before: the per-scan columns of
+        # a constant channel repeat them, and a reader that has none says so
+        parent = info.precursor
+        energy = info.collision_energy
+        charge = info.charge
     level = 1 if info.is_ms1 else 2
     if total is None:
         total = float(np.sum(intensity)) if intensity.size else 0.0
@@ -1447,7 +1706,8 @@ def _spectrum_xml(index: int, identifier: str, channel, rt: float,
         _cv(MS_LEVEL, "ms level", level),
         _cv("MS:1000579" if level == 1 else "MS:1000580",
             "MS1 spectrum" if level == 1 else "MSn spectrum"),
-        _cv(PROFILE_SPECTRUM, "profile spectrum"),
+        (_cv(CENTROID_SPECTRUM, "centroid spectrum") if centroided
+         else _cv(PROFILE_SPECTRUM, "profile spectrum")),
         _cv(NEGATIVE_SCAN if info.polarity.lower().startswith("neg")
             else POSITIVE_SCAN,
             "negative scan" if info.polarity.lower().startswith("neg")
@@ -1483,14 +1743,23 @@ def _spectrum_xml(index: int, identifier: str, channel, rt: float,
                      f"{info.end_mass:.6f}", unit="MS:1000040", unit_name="m/z"))
     parts.append("</scanWindow></scanWindowList></scan></scanList>")
 
-    if not info.is_ms1 and info.precursor is not None:
+    if not info.is_ms1 and parent is not None:
         parts.append('<precursorList count="1"><precursor>')
+        if width is not None:
+            parts.append("<isolationWindow>")
+            parts.append(_cv(ISOLATION_TARGET, "isolation window target m/z",
+                             repr(float(parent)), unit="MS:1000040", unit_name="m/z"))
+            parts.append(_cv(ISOLATION_LOWER, "isolation window lower offset",
+                             repr(width / 2.0), unit="MS:1000040", unit_name="m/z"))
+            parts.append(_cv(ISOLATION_UPPER, "isolation window upper offset",
+                             repr(width / 2.0), unit="MS:1000040", unit_name="m/z"))
+            parts.append("</isolationWindow>")
         parts.append("<selectedIonList count=\"1\"><selectedIon>")
         parts.append(_cv(SELECTED_ION_MZ, "selected ion m/z",
-                         f"{info.precursor:.6f}", unit="MS:1000040",
+                         repr(float(parent)), unit="MS:1000040",
                          unit_name="m/z"))
-        if info.charge is not None:
-            parts.append(_cv(CHARGE_STATE, "charge state", int(info.charge)))
+        if charge is not None:
+            parts.append(_cv(CHARGE_STATE, "charge state", int(charge)))
         parts.append("</selectedIon></selectedIonList>")
         parts.append("<activation>")
         # what the source said, where it said anything. A `.wiff` says
@@ -1501,9 +1770,9 @@ def _spectrum_xml(index: int, identifier: str, channel, rt: float,
         parts.append(_cv(_activation_accession(info.activation) if info.activation
                          else "MS:1000133",
                          info.activation or "collision-induced dissociation"))
-        if info.collision_energy is not None:
+        if energy is not None:
             parts.append(_cv(COLLISION_ENERGY, "collision energy",
-                             f"{info.collision_energy:g}", unit="UO:0000266",
+                             f"{energy:g}", unit="UO:0000266",
                              unit_name="electronvolt"))
         parts.append("</activation></precursor></precursorList>")
 

@@ -83,3 +83,28 @@ source and off Skyline's own tutorials, and the values are the method's;
 whether Skyline accepts the file is untested, and saying so is better than
 implying otherwise. The [[design-principles]] say why. The same reservation
 applies to the [[acquisition-schedule]], for the same reason.
+
+## A chart as a picture
+
+Every chart — the Explorer's chromatogram and spectrum, the contour map and
+its total-ion strip, each panel of the peak review grid, the calibration
+curve, the algorithm comparison, the metric plot, the control chart, mass
+drift and a standard's history — has **Export as a picture…** on its
+right-click menu. The dialog asks five things and shows the result:
+
+| Option | Choices |
+|---|---|
+| Format | SVG (for editing and for print at any size) or PNG |
+| Scale | 2–6× the size on screen (PNG only) |
+| Theme | Light, Dark, or as on screen |
+| Background | Paper (the theme's own ground), White, or Transparent |
+| Type size | 0.7–2.2× every piece of text: the axes, the legend and the labels |
+
+The preview is not a mock-up: it is the export itself, written to memory by
+the code that writes the file, so what it shows is what is saved. The
+choices are remembered for the next export. The chart is re-drawn in the
+chosen theme for the moment of the export and put back afterwards, so the
+picture holds exactly what the chart holds. These are the options
+MIL-X offers, so a figure from either program matches the other. The
+printed report and the compared spectra draw their own figures for paper —
+see [[report]].

@@ -394,11 +394,37 @@ def _surviving_precursor(entry: SampleEntry, component: Component,
     """
     channel = match_channel(entry.sample, component)
     if channel is None or channel.info.is_ms1:
-        return None
+        # data-dependent acquisition has no channel of this precursor — its
+        # product scans are per scan — so read the scans that isolated it
+        return _surviving_in_gated(entry, component, start, end, apex, window)
     if component.precursor > channel.info.end_mass:
         return None            # the scan range stops below the precursor
     mz, intensity = channel.spectrum_rt_range(min(start, apex), max(end, apex))
     found = in_spectrum(mz, intensity, component.precursor, window)
+    return None if found is None else found[0]
+
+
+def _surviving_in_gated(entry: SampleEntry, component: Component,
+                        start: float, end: float, apex: float,
+                        window: float) -> float | None:
+    """
+    The surviving precursor in the product scans that isolated it.
+
+    Only where the sample has per-scan channels (an IDA slot, DDA events):
+    the gate is the search window itself, since the written precursor is
+    known only to the decimals it was typed with, and a scan whose own
+    precursor lies outside it fragmented something else.
+    """
+    from .gating import Source, spectrum
+
+    sample = entry.sample
+    if not any(getattr(c.info, "per_scan", False) for c in sample.channels):
+        return None
+    gated = spectrum(sample, Source.gated(component.precursor, window),
+                     (min(start, apex), max(end, apex)))
+    if not gated.scans or gated.mz.size == 0:
+        return None
+    found = in_spectrum(gated.mz, gated.intensity, component.precursor, window)
     return None if found is None else found[0]
 
 

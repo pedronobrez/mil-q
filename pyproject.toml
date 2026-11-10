@@ -20,8 +20,15 @@ dependencies = [
     "certifi",
 ]
 
+[project.optional-dependencies]
+# `pip install .[cli]`: the command line alone — no Qt, no pyqtgraph — for a
+# headless machine. The base install still lists the window's dependencies,
+# so `pip install --no-deps .` followed by `pip install numpy pythonnet
+# alpharaw certifi` is the lightest route on a VM (see command-line.md).
+cli = ["numpy>=1.24", "pythonnet>=3.0", "alpharaw>=0.7", "certifi"]
+
 [project.scripts]
-milq = "milq.app:main"
+milq = "milq.cli:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "milq.__version__" }
